@@ -303,3 +303,138 @@ h1, h2, h3, h4, h5, h6 {
   background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)'/%3E%3C/svg%3E");
   background-size: 256px 256px;
 }
+
+/* ─── Brand Preloader ────────────────────────────────────────────────────── */
+.brand-loader {
+  position: fixed;
+  inset: 0;
+  z-index: 10000;
+  display: grid;
+  place-items: center;
+  overflow: hidden;
+  background:
+    radial-gradient(ellipse at 50% 46%, rgba(245, 166, 35, 0.12), transparent 42%),
+    radial-gradient(ellipse at 50% 55%, rgba(0, 229, 255, 0.06), transparent 58%),
+    #060918;
+  animation: brand-loader-exit 450ms cubic-bezier(0.65, 0, 0.35, 1) 1.55s forwards;
+}
+
+.brand-loader__scene {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 1.25rem;
+  perspective: 1000px;
+}
+
+.brand-loader__halo {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: min(76vw, 390px);
+  aspect-ratio: 1;
+  border: 1px solid rgba(255, 215, 0, 0.15);
+  border-radius: 50%;
+  box-shadow: 0 0 70px rgba(245, 166, 35, 0.1), inset 0 0 70px rgba(245, 166, 35, 0.05);
+  transform: translate(-50%, -58%) scale(0.82);
+  animation: brand-loader-halo 2.1s ease-out both;
+}
+
+.brand-loader__wordmark {
+  position: relative;
+  width: min(68vw, 340px);
+  aspect-ratio: 712 / 350;
+  animation: brand-loader-reveal 950ms cubic-bezier(0.2, 1.35, 0.35, 1) both;
+  filter: drop-shadow(0 10px 24px rgba(245, 166, 35, 0.18));
+}
+
+.brand-loader__wordmark img {
+  display: block;
+  width: 100%;
+  height: 100%;
+  object-fit: contain;
+}
+
+.brand-loader__sweep {
+  position: absolute;
+  inset: -20%;
+  z-index: 1;
+  background: linear-gradient(
+    110deg,
+    transparent 43%,
+    rgba(255, 244, 204, 0.1) 47%,
+    rgba(255, 255, 255, 0.82) 50%,
+    rgba(255, 217, 127, 0.18) 53%,
+    transparent 58%
+  );
+  -webkit-mask: url('/2carvn-logo.png') center / contain no-repeat;
+  mask: url('/2carvn-logo.png') center / contain no-repeat;
+  transform: translateX(-120%) skewX(-12deg);
+  animation: brand-loader-sweep 600ms ease-in-out 450ms both;
+  pointer-events: none;
+}
+
+.brand-loader__caption {
+  color: rgba(255, 232, 173, 0.82);
+  font-family: 'Space Grotesk', sans-serif;
+  font-size: 0.7rem;
+  font-weight: 600;
+  letter-spacing: 0.34em;
+  text-indent: 0.34em;
+  animation: brand-loader-caption 650ms ease-out 450ms both;
+}
+
+@keyframes brand-loader-reveal {
+  from {
+    opacity: 0;
+    transform: rotateX(-22deg) translateY(22px) scale(0.72);
+  }
+  to {
+    opacity: 1;
+    transform: rotateX(0) translateY(0) scale(1);
+  }
+}
+
+@keyframes brand-loader-halo {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -58%) scale(0.72);
+  }
+  55% { opacity: 1; }
+  100% {
+    opacity: 0.72;
+    transform: translate(-50%, -58%) scale(1.05);
+  }
+}
+
+@keyframes brand-loader-sweep {
+  to { transform: translateX(120%) skewX(-12deg); }
+}
+
+@keyframes brand-loader-caption {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes brand-loader-exit {
+  to {
+    opacity: 0;
+    visibility: hidden;
+    pointer-events: none;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .brand-loader {
+    animation-duration: 400ms !important;
+    animation-delay: 700ms !important;
+  }
+
+  .brand-loader__wordmark,
+  .brand-loader__halo,
+  .brand-loader__sweep,
+  .brand-loader__caption {
+    animation: none !important;
+  }
+}

@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
@@ -117,19 +118,13 @@ export default function Sidebar({ navItems, userName, userRole, avatarInitials }
           style={{ borderBottom: '1px solid rgba(255,255,255,0.06)' }}
         >
           <Link href="/" className="flex items-center gap-3">
-            {/* Gold emblem */}
-            <div
-              className="flex-shrink-0 w-9 h-9 rounded-xl flex items-center justify-center font-bold text-sm shadow-md"
-              style={{
-                background: 'linear-gradient(135deg, #D4A843 0%, #F5A623 50%, #B8860B 100%)',
-                color: '#0D0D0D',
-                fontFamily: 'Space Grotesk, sans-serif'
-              }}
-            >
-              <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L15 8L21 9L17 14L18 20L12 17L6 20L7 14L3 9L9 8L12 2Z" />
-              </svg>
-            </div>
+            <Image
+              src="/2carvn-mark.png"
+              alt="2Carvn Academy"
+              width={40}
+              height={40}
+              className="flex-shrink-0 h-10 w-10 object-contain drop-shadow-[0_0_10px_rgba(212,168,67,0.2)]"
+            />
             {!collapsed && (
               <div>
                 <span className="block font-bold text-white text-base tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>

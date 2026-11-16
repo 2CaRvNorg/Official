@@ -2,6 +2,7 @@
 
 import { Suspense, useState } from 'react';
 import Link from 'next/link';
+import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
 
@@ -154,18 +155,14 @@ function LoginForm() {
         {/* Brand Header */}
         <div className="text-center mb-8">
           <Link href="/" className="inline-flex items-center gap-3 group mb-4">
-            <div
-              className="w-11 h-11 rounded-2xl flex items-center justify-center font-bold text-base shadow-xl"
-              style={{
-                background: 'linear-gradient(135deg, #D4A843 0%, #F5A623 50%, #B8860B 100%)',
-                color: '#0D0D0D',
-                fontFamily: 'Space Grotesk, sans-serif',
-              }}
-            >
-              <svg width="24" height="24" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M12 2L15 8L21 9L17 14L18 20L12 17L6 20L7 14L3 9L9 8L12 2Z" />
-              </svg>
-            </div>
+            <Image
+              src="/2carvn-mark.png"
+              alt="2Carvn Academy logo"
+              width={56}
+              height={56}
+              priority
+              className="h-14 w-14 object-contain drop-shadow-[0_0_16px_rgba(212,168,67,0.28)]"
+            />
             <div className="text-left">
               <span className="block font-bold text-white text-xl tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                 2CARVN <span style={{ color: '#D4A843' }}>Academy</span>
