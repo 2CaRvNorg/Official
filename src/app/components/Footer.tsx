@@ -81,7 +81,6 @@ export default function Footer() {
         <div
           ref={ctaSectionRef}
           className="max-w-4xl mx-auto text-center"
-          style={{ opacity: 0 }}
         >
           {/* Background orbs */}
           <div
@@ -142,12 +141,15 @@ export default function Footer() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
             {/* Brand */}
             <div>
-              <div className="flex items-center gap-2 mb-4">
-                <div className="w-9 h-9 rounded-xl flex items-center justify-center font-heading font-bold text-sm"
-                  style={{ background: 'linear-gradient(135deg, #F5A623, #FFD700)', color: '#060918' }}>
-                  2C
-                </div>
-                <span className="font-heading font-700 text-white text-lg tracking-tight">
+              <div className="mb-4 flex items-center gap-3">
+                <img
+                  src="/2carvn-mark.png"
+                  alt="2Carvn"
+                  width="48"
+                  height="48"
+                  className="brand-mark h-11 w-11 object-contain"
+                />
+                <span className="font-heading text-lg font-bold tracking-tight text-white">
                   2Carvn <span className="gradient-text-gold">Academy</span>
                 </span>
               </div>

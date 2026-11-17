@@ -116,7 +116,6 @@ export default function Features() {
             <div
               key={feature.title}
               className="feature-card glass-card p-7 group hover:-translate-y-1.5 transition-transform duration-300 cursor-default"
-              style={{ opacity: 0 }}
             >
               {/* Icon */}
               <div

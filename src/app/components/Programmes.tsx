@@ -149,7 +149,6 @@ export default function Programmes() {
               <div
                 ref={(el) => { cardsRef.current[i] = el; }}
                 className="tilt-card glass-card p-8 cursor-default group"
-                style={{ opacity: 0 }}
                 onMouseMove={(e) => handleMouseMove(e, i)}
                 onMouseLeave={() => handleMouseLeave(i)}
               >

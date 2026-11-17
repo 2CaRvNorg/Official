@@ -60,7 +60,6 @@ export default function Navbar() {
   return (
     <header
       ref={navRef}
-      style={{ opacity: 0 }}
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
         scrolled ? 'py-3' : 'py-4'
       }`}
@@ -74,15 +73,18 @@ export default function Navbar() {
           {/* Logo */}
           <a
             href="#"
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-2"
             onClick={() => window.scrollTo({ top: 0, behavior: 'smooth' })}
           >
-            <div className="w-9 h-9 rounded-xl flex items-center justify-center font-heading font-bold text-sm"
-              style={{ background: 'linear-gradient(135deg, #F5A623, #FFD700)', color: '#060918' }}>
-              2C
-            </div>
+            <img
+              src="/2carvn-logo.png"
+              alt="2Carvn"
+              width="96"
+              height="47"
+              className="brand-mark h-10 w-24 object-contain"
+            />
             <span className="font-heading font-700 text-white text-lg tracking-tight hidden sm:block">
-              2Carvn <span className="gradient-text-gold">Academy</span>
+              <span className="gradient-text-gold">Academy</span>
             </span>
           </a>
 

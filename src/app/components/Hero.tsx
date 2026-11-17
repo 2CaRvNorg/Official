@@ -24,6 +24,7 @@ export default function Hero() {
   const tagRef = useRef<HTMLParagraphElement>(null);
   const subRef = useRef<HTMLParagraphElement>(null);
   const ctaRef = useRef<HTMLDivElement>(null);
+  const previewRef = useRef<HTMLElement>(null);
 
   useEffect(() => {
     gsap.registerPlugin(ScrollTrigger);
@@ -36,6 +37,20 @@ export default function Hero() {
         .fromTo(tagRef.current, { y: 40, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' }, '-=0.5')
         .fromTo(subRef.current, { y: 30, opacity: 0 }, { y: 0, opacity: 1, duration: 0.7, ease: 'power3.out' }, '-=0.4')
         .fromTo(ctaRef.current, { y: 20, opacity: 0 }, { y: 0, opacity: 1, duration: 0.6, ease: 'power3.out' }, '-=0.4');
+
+      if (previewRef.current) {
+        const steps = previewRef.current.querySelectorAll('.learning-step');
+        gsap.fromTo(
+          previewRef.current,
+          { x: 36, opacity: 0 },
+          { x: 0, opacity: 1, duration: 0.9, ease: 'power3.out', delay: 0.35 }
+        );
+        gsap.fromTo(
+          steps,
+          { y: 14, opacity: 0 },
+          { y: 0, opacity: 1, duration: 0.55, ease: 'power2.out', stagger: 0.12, delay: 0.8 }
+        );
+      }
 
       // Parallax on scroll — orbs move slower
       if (orbsRef.current) {
@@ -119,8 +134,9 @@ export default function Hero() {
       {/* Content */}
       <div
         ref={contentRef}
-        className="relative z-10 max-w-5xl mx-auto px-6 text-center"
+        className="relative z-10 grid w-full max-w-7xl grid-cols-1 items-center gap-14 px-6 py-28 mx-auto lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-24"
       >
+        <div className="text-center lg:text-left">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8 text-sm font-medium"
           style={{ opacity: 1 }}>
@@ -131,7 +147,7 @@ export default function Hero() {
         <h1
           ref={h1Ref}
           className="section-title mb-4"
-          style={{ fontSize: 'clamp(2.8rem, 7vw, 5.5rem)', opacity: 0 }}
+          style={{ fontSize: 'clamp(2.8rem, 7vw, 5.5rem)' }}
         >
           <span className="gradient-text-gold">2Carvn</span>{' '}
           <span className="text-white">Academy</span>
@@ -140,7 +156,7 @@ export default function Hero() {
         <p
           ref={tagRef}
           className="font-heading font-semibold text-white/90 mb-6"
-          style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)', opacity: 0 }}
+          style={{ fontSize: 'clamp(1.1rem, 2.5vw, 1.6rem)' }}
         >
           Learn <span className="gradient-text-cyan">Design</span>,{' '}
           <span style={{ color: '#F5A623' }}>Technology</span> &amp;{' '}
@@ -149,14 +165,13 @@ export default function Hero() {
 
         <p
           ref={subRef}
-          className="section-subtitle mx-auto mb-10 text-center"
-          style={{ opacity: 0 }}
+          className="section-subtitle mx-auto mb-10 text-center lg:mx-0 lg:text-left"
         >
           A six-month programme for students in Grades 6–10 across Design, Web Technology,
           and Communication. Multi-institution, live, and gamified.
         </p>
 
-        <div ref={ctaRef} className="flex flex-wrap gap-4 justify-center" style={{ opacity: 0 }}>
+        <div ref={ctaRef} className="flex flex-wrap gap-4 justify-center lg:justify-start">
           <a
             href="#programmes"
             className="btn-gold text-base"
@@ -183,9 +198,67 @@ export default function Hero() {
             Chat on WhatsApp
           </a>
         </div>
+        </div>
+
+        <aside ref={previewRef} className="relative hidden lg:block" aria-labelledby="learning-preview-title">
+          <div
+            className="absolute -inset-8 rounded-full blur-3xl"
+            style={{ background: 'radial-gradient(circle, rgba(0,229,255,0.12), rgba(245,166,35,0.12) 48%, transparent 72%)' }}
+            aria-hidden="true"
+          />
+          <div className="glass-card relative overflow-hidden p-8">
+            <div className="absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-[#00E5FF]/70 to-transparent" aria-hidden="true" />
+            <div className="mb-8 flex items-center justify-between gap-4">
+              <span className="text-xs font-semibold tracking-[0.18em] text-white/50 uppercase">The learning journey</span>
+              <span className="rounded-full border border-[#F5A623]/30 bg-[#F5A623]/10 px-3 py-1 text-xs font-medium text-[#FFD37A]">
+                6 months
+              </span>
+            </div>
+
+            <h2 id="learning-preview-title" className="mb-3 font-heading text-3xl font-bold leading-tight text-white">
+              Learn it. Build it.{' '}
+              <span className="gradient-text-cyan">Share it.</span>
+            </h2>
+            <p className="mb-8 max-w-md text-sm leading-relaxed text-white/55">
+              Turn new skills into real projects, with a programme built for curious minds in Grades 6–10.
+            </p>
+
+            <div className="space-y-3">
+              {[
+                { number: '01', title: 'Design with purpose', detail: 'Visual thinking, colour and storytelling', color: '#F5A623' },
+                { number: '02', title: 'Build for the web', detail: 'Learn the basics by making real projects', color: '#00E5FF' },
+                { number: '03', title: 'Share ideas clearly', detail: 'Communication that brings your work to life', color: '#A99AFF' },
+              ].map((step) => (
+                <div
+                  key={step.number}
+                  className="learning-step group flex items-center gap-4 rounded-2xl border border-white/[0.07] bg-white/[0.035] p-4 transition-transform duration-300 hover:translate-x-1"
+                >
+                  <span
+                    className="flex h-10 w-10 flex-shrink-0 items-center justify-center rounded-xl text-xs font-bold"
+                    style={{ color: step.color, background: `${step.color}18`, border: `1px solid ${step.color}35` }}
+                  >
+                    {step.number}
+                  </span>
+                  <div>
+                    <p className="text-sm font-semibold text-white">{step.title}</p>
+                    <p className="mt-1 text-xs leading-relaxed text-white/45">{step.detail}</p>
+                  </div>
+                </div>
+              ))}
+            </div>
+
+            <div className="mt-6 flex items-center justify-between border-t border-white/[0.08] pt-5 text-xs text-white/50">
+              <span>Live classes · Hands-on projects</span>
+              <span className="flex items-center gap-2">
+                <span className="h-2 w-2 rounded-full bg-[#00E5FF]" />
+                Grades 6–10
+              </span>
+            </div>
+          </div>
+        </aside>
 
         {/* Scroll indicator */}
-        <div className="mt-20 flex justify-center">
+        <div className="flex justify-center lg:col-span-2">
           <div className="flex flex-col items-center gap-2 text-white/30 text-xs font-medium tracking-widest uppercase">
             <span>Scroll</span>
             <div className="w-px h-10 bg-gradient-to-b from-white/30 to-transparent" />

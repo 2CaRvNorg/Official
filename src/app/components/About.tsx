@@ -89,7 +89,7 @@ export default function About() {
 
         <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
           {/* Left: Text Content */}
-          <div ref={textRef} style={{ opacity: 0 }}>
+          <div ref={textRef}>
             <h2 className="section-title mb-6">
               Building Tomorrow's{' '}
               <span className="gradient-text-gold">Creators</span>,{' '}
@@ -136,7 +136,6 @@ export default function About() {
               <div
                 key={stat.label}
                 className="stat-card glass-card p-7 flex flex-col items-start gap-3 group hover:-translate-y-1 transition-transform duration-300"
-                style={{ opacity: 0 }}
               >
                 <div
                   className="icon-ring text-2xl"

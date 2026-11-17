@@ -115,7 +115,7 @@ export default function Testimonials() {
 
       <div className="max-w-4xl mx-auto">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-16" style={{ opacity: 0 }}>
+        <div ref={headerRef} className="text-center mb-16">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6"
             style={{ background: 'rgba(245,166,35,0.1)', color: '#F5A623', border: '1px solid rgba(245,166,35,0.3)' }}>
             Student Stories
@@ -130,7 +130,7 @@ export default function Testimonials() {
         </div>
 
         {/* Testimonial Card */}
-        <div ref={sliderRef} style={{ opacity: 0 }}>
+        <div ref={sliderRef}>
           <div className="glass-card p-10 relative">
             {/* Quote icon */}
             <div

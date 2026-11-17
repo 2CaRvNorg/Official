@@ -145,7 +145,7 @@ export default function FAQ() {
     >
       <div className="max-w-3xl mx-auto">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-14" style={{ opacity: 0 }}>
+        <div ref={headerRef} className="text-center mb-14">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6"
             style={{ background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.3)' }}>
             FAQs
@@ -175,7 +175,6 @@ export default function FAQ() {
               <div
                 key={i}
                 className="faq-item glass-card overflow-hidden"
-                style={{ opacity: 0 }}
               >
                 <button
                   onClick={() => toggle(i)}

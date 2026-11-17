@@ -269,6 +269,15 @@ h1, h2, h3, h4, h5, h6 {
   box-shadow: 0 0 12px rgba(245, 166, 35, 0.6);
 }
 
+.brand-mark {
+  animation: brand-mark-float 5s ease-in-out infinite;
+}
+
+@keyframes brand-mark-float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-3px); }
+}
+
 /* ─── Programme card tilt wrapper ───────────────────────────────────────── */
 .tilt-wrapper {
   perspective: 1200px;
