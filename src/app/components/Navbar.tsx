@@ -67,9 +67,9 @@ export default function Navbar() {
         scrolled ? 'py-3' : 'py-4'
       }`}
     >
-      <div className="w-full px-4 mx-auto sm:px-6">
+      <div className="w-full px-3 sm:px-5">
         <nav
-          className={`glass rounded-2xl px-5 py-3 flex items-center justify-between transition-all duration-300 ${
+          className={`glass rounded-2xl px-4 py-3 flex items-center justify-between transition-all duration-300 ${
             scrolled ? 'shadow-lg' : ''
           }`}
         >
@@ -206,11 +206,10 @@ export default function Navbar() {
           </div>
         </nav>
 
-        {/* Mobile Menu */}
-        {menuOpen && (
+        {/* Mobile Menu */}            {menuOpen && (
           <div
             ref={mobileMenuRef}
-            className="md:hidden mt-2 glass rounded-2xl p-4 flex flex-col gap-1"
+            className="md:hidden mt-2 glass rounded-2xl p-3 flex flex-col gap-1 overflow-y-auto"
           >
             {NAV_LINKS.map((link) => (
               <button
