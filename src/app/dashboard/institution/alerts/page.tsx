@@ -1,72 +1,73 @@
 'use client';
 
-import Sidebar, { NavItem } from '@/components/dashboard/Sidebar';
-import TopBar from '@/components/dashboard/TopBar';
-import GlassCard from '@/components/dashboard/GlassCard';
-
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard/institution', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
-  { label: 'Batches & Progress', href: '/dashboard/institution/batches', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
-  { label: 'Student Roster', href: '/dashboard/institution/students', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-  { label: 'Teacher Schedule', href: '/dashboard/institution/schedule', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-  { label: 'Support & Alerts', href: '/dashboard/institution/alerts', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
-  { label: 'Reports', href: '/dashboard/institution/reports', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
-];
+import InstitutionPage from '@/components/dashboard/institution/InstitutionPage';
 
 export default function InstitutionAlertsPage() {
   return (
-    <div className="flex min-h-screen" style={{ background: '#0D0D0D' }}>
-      <Sidebar navItems={NAV_ITEMS} userName="Amit Sen" userRole="Institution Head" avatarInitials="AS" />
+    <InstitutionPage
+      title="Campus Support & Intervention Alerts"
+      subtitle={(data) => data?.institution ? `${data.institution.name} · live alerts` : 'Real alerts for students or batches in need of support'}
+    >
+      {(data) => (
+        <div className="grid grid-cols-1 gap-5 lg:grid-cols-3">
+          <div className="space-y-5">
+            {data.alerts.map((alert) => {
+              const isHigh = alert.severity === 'high';
+              const isMedium = alert.severity === 'medium';
 
-      <div className="flex-1 flex flex-col md:ml-[230px]">
-        <TopBar
-          title="Campus Support & Intervention Alerts"
-          subtitle="Hitech City Branch · Active academic alerts"
-          notificationCount={4}
-          userName="Amit Sen"
-          avatarInitials="AS"
-        />
-
-        <main className="flex-1 p-5 pb-20 md:pb-6 space-y-5">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div className="p-5 rounded-2xl bg-amber-500/10 border border-amber-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white">⚠️ Aarav K. - Low Attendance</span>
-                <span className="text-[10px] font-bold text-amber-400 bg-amber-500/20 px-2 py-0.5 rounded">Action Required</span>
-              </div>
-              <p className="text-xs text-[#AAA] leading-relaxed">
-                Learner has missed 3 live classes consecutively. Attendance is at 72%. Campus coordinator counseling suggested.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={() => alert('Campus intervention scheduled for Aarav K.')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#0D0D0D] bg-[#D4A843] hover:brightness-110"
+              return (
+                <div
+                  key={alert.id}
+                  className="p-5 rounded-2xl space-y-3"
+                  style={{
+                    background: isHigh ? 'rgba(255,82,82,0.10)' : isMedium ? 'rgba(255,152,0,0.10)' : 'rgba(24,92,205,0.10)',
+                    border: `1px solid ${isHigh ? 'rgba(255,82,82,0.35)' : isMedium ? 'rgba(255,152,0,0.35)' : 'rgba(24,92,205,0.35)'}`,
+                  }}
                 >
-                  Schedule Counseling →
-                </button>
+                  <div className="flex items-start justify-between gap-4">
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg" style={{ color: isHigh ? '#FF5252' : isMedium ? '#FF9800' : '#4A90E2' }}>
+                        {isHigh ? '🚨' : isMedium ? '⚠️' : 'ℹ️'}
+                      </span>
+                      <div>
+                        <div className="text-sm font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          {alert.title}
+                        </div>
+                        <div className="text-xs mt-0.5 leading-relaxed text-[#AAA]">{alert.description}</div>
+                      </div>
+                    </div>
+                    <span
+                      className="rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase"
+                      style={{
+                        background: isHigh ? 'rgba(255,82,82,0.15)' : isMedium ? 'rgba(255,152,0,0.15)' : 'rgba(74,144,226,0.15)',
+                        color: isHigh ? '#FF5252' : isMedium ? '#FF9800' : '#4A90E2',
+                      }}
+                    >
+                      {alert.severity}
+                    </span>
+                  </div>
+                </div>
+              );
+            })}
+            {data.alerts.length === 0 && (
+              <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5 text-center text-sm text-[#888]">
+                No active support or intervention alerts have been recorded for this institution.
               </div>
-            </div>
-
-            <div className="p-5 rounded-2xl bg-red-500/10 border border-red-500/30 space-y-3">
-              <div className="flex items-center justify-between">
-                <span className="text-xs font-bold text-white">⚠️ Batch C - Missed Assignment Submissions</span>
-                <span className="text-[10px] font-bold text-red-400 bg-red-500/20 px-2 py-0.5 rounded">High Priority</span>
+            )}
+          </div>
+          <div className="space-y-5">
+            <div className="rounded-2xl border border-white/[0.08] bg-white/[0.02] p-5">
+              <div className="text-sm font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                Alert action guidance
               </div>
-              <p className="text-xs text-[#AAA] leading-relaxed">
-                5 students in Batch C missed the milestone submission deadline for Capstone Project 1.
-              </p>
-              <div className="flex justify-end gap-2 pt-2">
-                <button
-                  onClick={() => alert('Batch remedial notification triggered.')}
-                  className="px-3 py-1.5 rounded-lg text-xs font-bold text-[#0D0D0D] bg-[#D4A843] hover:brightness-110"
-                >
-                  Contact Batch Faculty →
-                </button>
+              <div className="mt-2 space-y-2 text-xs text-[#AAA]">
+                <p>High and medium alerts are generated from real student attendance and batch performance data.</p>
+                <p>Resolve the underlying attendance, task or assignment issue, then reload this view.</p>
               </div>
             </div>
           </div>
-        </main>
-      </div>
-    </div>
+        </div>
+      )}
+    </InstitutionPage>
   );
 }

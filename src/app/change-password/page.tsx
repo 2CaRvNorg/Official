@@ -3,14 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
-
-const ROLE_HOME: Record<string, string> = {
-  admin: '/dashboard/admin',
-  institution_head: '/dashboard/institution',
-  teacher: '/dashboard/teacher',
-  student: '/dashboard/student',
-  money_management: '/dashboard/admin/finance',
-};
+import { getRoleHome } from '@/lib/rbac';
 
 export default function ChangePasswordPage() {
   const router = useRouter();
@@ -55,7 +48,7 @@ export default function ChangePasswordPage() {
         .single();
       if (profileError || !profile) throw profileError || new Error('Unable to update your account profile.');
 
-      const roleHome = ROLE_HOME[String(profile.role)];
+      const roleHome = getRoleHome(profile.role);
       if (!roleHome) throw new Error('Your account role is not supported. Contact your administrator.');
       router.replace(roleHome);
     } catch (err: unknown) {

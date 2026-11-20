@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Sidebar, { NavItem } from '@/components/dashboard/Sidebar';
 import TopBar from '@/components/dashboard/TopBar';
@@ -19,80 +19,229 @@ const NAV_ITEMS: NavItem[] = [
   { label: 'Settings', href: '/dashboard/admin/settings', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.07 4.93l-1.41 1.41M4.93 4.93l1.41 1.41M12 2v2M12 20v2M2 12h2M20 12h2M4.93 19.07l1.41-1.41M19.07 19.07l-1.41-1.41"/></svg> },
 ];
 
-interface Institution {
+interface InstitutionRecord {
   id: string;
   name: string;
   code: string;
-  head: string;
-  email: string;
-  phone: string;
-  branches: number;
-  batches: number;
-  students: number;
-  status: 'Active' | 'Pending';
+  headUserId: string | null;
+  headName: string | null;
+  headEmail: string | null;
+  headPhone: string | null;
+  contactPerson: string | null;
+  email: string | null;
+  phone: string | null;
+  branchesCount: number;
+  batchesCount: number;
+  studentsCount: number;
+  status: string;
+  createdAt: string;
 }
 
-const INITIAL_INSTITUTIONS: Institution[] = [
-  { id: '1', name: 'Partner School Alpha', code: 'PSA-01', head: 'Anthem Schwoner', email: 'anthem@alpha.edu', phone: '+91 98765 43210', branches: 3, batches: 42, students: 640, status: 'Active' },
-  { id: '2', name: 'Partner School Beta', code: 'PSB-02', head: 'Jeni Dimav', email: 'jeni@beta.edu', phone: '+91 98765 43211', branches: 2, batches: 16, students: 320, status: 'Active' },
-  { id: '3', name: 'Partner School Gamma', code: 'PSG-03', head: 'Dathan Aiteman', email: 'dathan@gamma.edu', phone: '+91 98765 43212', branches: 1, batches: 2, students: 48, status: 'Active' },
-  { id: '4', name: 'Sunrise Public Academy', code: 'SPA-04', head: 'Priya Nair', email: 'priya@sunrise.edu', phone: '+91 98765 43213', branches: 2, batches: 8, students: 180, status: 'Active' },
-];
+interface EligibleHead {
+  id: string;
+  fullName: string;
+  email: string;
+  phone: string | null;
+  role: string;
+  status: string;
+}
+
+interface Feedback {
+  type: 'success' | 'error';
+  message: string;
+}
+
+function statusLabel(value: string) {
+  return value
+    .split(/[_\s-]+/)
+    .filter(Boolean)
+    .map((part) => `${part[0]?.toUpperCase() ?? ''}${part.slice(1)}`)
+    .join(' ');
+}
 
 export default function InstitutionsPage() {
   const router = useRouter();
-  const [institutions, setInstitutions] = useState<Institution[]>(INITIAL_INSTITUTIONS);
-  const [showModal, setShowModal] = useState(false);
+  const [institutions, setInstitutions] = useState<InstitutionRecord[]>([]);
+  const [eligibleHeads, setEligibleHeads] = useState<EligibleHead[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [feedback, setFeedback] = useState<Feedback | null>(null);
   const [searchQuery, setSearchQuery] = useState('');
 
-  // Form state
+  const [showCreateModal, setShowCreateModal] = useState(false);
+  const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
   const [newName, setNewName] = useState('');
   const [newCode, setNewCode] = useState('');
-  const [newHead, setNewHead] = useState('');
+  const [newHeadUserId, setNewHeadUserId] = useState('');
+  const [newBranchName, setNewBranchName] = useState('');
+  const [newContactPerson, setNewContactPerson] = useState('');
   const [newEmail, setNewEmail] = useState('');
   const [newPhone, setNewPhone] = useState('');
-  const [newBranchName, setNewBranchName] = useState('');
+
+  const [assigningInstitution, setAssigningInstitution] = useState<InstitutionRecord | null>(null);
+  const [assignHeadUserId, setAssignHeadUserId] = useState('');
+  const [isAssigning, setIsAssigning] = useState(false);
+  const [assignError, setAssignError] = useState<string | null>(null);
+
+  const loadInstitutionData = useCallback(async () => {
+    setIsLoading(true);
+    setLoadError(null);
+
+    try {
+      const response = await fetch('/api/admin/institutions', { cache: 'no-store' });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof result?.error === 'string' ? result.error : 'Failed to load institutions.');
+      }
+      setInstitutions(Array.isArray(result.institutions) ? result.institutions : []);
+      setEligibleHeads(Array.isArray(result.eligibleHeads) ? result.eligibleHeads : []);
+    } catch (error) {
+      setLoadError(error instanceof Error ? error.message : 'Failed to load institutions.');
+    } finally {
+      setIsLoading(false);
+    }
+  }, []);
+
+  useEffect(() => {
+    void loadInstitutionData();
+  }, [loadInstitutionData]);
 
   useEffect(() => {
     if (new URLSearchParams(window.location.search).get('action') !== 'create') return;
 
-    setShowModal(true);
+    setShowCreateModal(true);
     router.replace('/dashboard/admin/institutions', { scroll: false });
   }, [router]);
 
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!newName || !newCode) return;
+  const assignedHeadIds = useMemo(
+    () => new Set(institutions.map((institution) => institution.headUserId).filter(Boolean)),
+    [institutions],
+  );
 
-    const newInst: Institution = {
-      id: String(Date.now()),
-      name: newName,
-      code: newCode.toUpperCase(),
-      head: newHead || 'Designated Head',
-      email: newEmail,
-      phone: newPhone,
-      branches: 1,
-      batches: 0,
-      students: 0,
-      status: 'Active',
-    };
+  const activeHeads = useMemo(
+    () => eligibleHeads.filter((head) => head.status === 'active' && !assignedHeadIds.has(head.id)),
+    [eligibleHeads, assignedHeadIds],
+  );
 
-    setInstitutions([newInst, ...institutions]);
-    setShowModal(false);
-    // Reset form
+  const filtered = institutions.filter((institution) => {
+    const query = searchQuery.toLowerCase();
+    return (
+      institution.name.toLowerCase().includes(query) ||
+      institution.code.toLowerCase().includes(query) ||
+      (institution.headName ?? '').toLowerCase().includes(query) ||
+      (institution.headEmail ?? '').toLowerCase().includes(query)
+    );
+  });
+
+  const totals = useMemo(() => ({
+    branches: institutions.reduce((total, institution) => total + institution.branchesCount, 0),
+    batches: institutions.reduce((total, institution) => total + institution.batchesCount, 0),
+    students: institutions.reduce((total, institution) => total + institution.studentsCount, 0),
+  }), [institutions]);
+
+  const resetCreateForm = () => {
     setNewName('');
     setNewCode('');
-    setNewHead('');
+    setNewHeadUserId('');
+    setNewBranchName('');
+    setNewContactPerson('');
     setNewEmail('');
     setNewPhone('');
-    setNewBranchName('');
+    setCreateError(null);
   };
 
-  const filtered = institutions.filter(inst =>
-    inst.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inst.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    inst.head.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  const openCreateModal = () => {
+    resetCreateForm();
+    setShowCreateModal(true);
+  };
+
+  const closeCreateModal = () => {
+    if (isCreating) return;
+    setShowCreateModal(false);
+    resetCreateForm();
+  };
+
+  const handleCreate = async (event: React.FormEvent) => {
+    event.preventDefault();
+    setIsCreating(true);
+    setCreateError(null);
+
+    try {
+      const response = await fetch('/api/admin/institutions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName,
+          code: newCode,
+          head_user_id: newHeadUserId || null,
+          branch_name: newBranchName,
+          contact_person: newContactPerson,
+          email: newEmail,
+          phone: newPhone,
+        }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof result?.error === 'string' ? result.error : 'Failed to create institution.');
+      }
+
+      setShowCreateModal(false);
+      resetCreateForm();
+      setFeedback({ type: 'success', message: `${newName.trim()} was created successfully.` });
+      await loadInstitutionData();
+    } catch (error) {
+      setCreateError(error instanceof Error ? error.message : 'Failed to create institution.');
+    } finally {
+      setIsCreating(false);
+    }
+  };
+
+  const openAssignModal = (institution: InstitutionRecord) => {
+    setAssigningInstitution(institution);
+    setAssignHeadUserId(institution.headUserId ?? '');
+    setAssignError(null);
+  };
+
+  const closeAssignModal = () => {
+    if (isAssigning) return;
+    setAssigningInstitution(null);
+    setAssignError(null);
+  };
+
+  const handleAssignHead = async (event: React.FormEvent) => {
+    event.preventDefault();
+    if (!assigningInstitution) return;
+
+    setIsAssigning(true);
+    setAssignError(null);
+
+    try {
+      const response = await fetch(`/api/admin/institutions?id=${encodeURIComponent(assigningInstitution.id)}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ head_user_id: assignHeadUserId || null }),
+      });
+      const result = await response.json().catch(() => ({}));
+      if (!response.ok) {
+        throw new Error(typeof result?.error === 'string' ? result.error : 'Failed to assign institution head.');
+      }
+
+      const head = eligibleHeads.find((candidate) => candidate.id === assignHeadUserId);
+      setAssigningInstitution(null);
+      setFeedback({
+        type: 'success',
+        message: head
+          ? `${head.fullName} was assigned to ${assigningInstitution.name}.`
+          : `${assigningInstitution.name} now has no assigned head.`,
+      });
+      await loadInstitutionData();
+    } catch (error) {
+      setAssignError(error instanceof Error ? error.message : 'Failed to assign institution head.');
+    } finally {
+      setIsAssigning(false);
+    }
+  };
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0D0D0D' }}>
@@ -101,21 +250,49 @@ export default function InstitutionsPage() {
       <div className="flex-1 flex flex-col md:ml-[230px]">
         <TopBar
           title="Institution Management"
-          subtitle="Partner schools, campuses & branches"
+          subtitle="Partner schools, campuses & assigned institution heads"
           notificationCount={1}
           userName="Super Admin"
           avatarInitials="SA"
         />
 
         <main className="flex-1 p-5 pb-20 md:pb-6 space-y-5">
-          {/* Header Action Bar */}
+          {feedback && (
+            <div
+              role="status"
+              className={`flex items-start justify-between gap-4 rounded-xl border p-3.5 text-xs font-semibold ${
+                feedback.type === 'success'
+                  ? 'border-emerald-500/30 bg-emerald-500/10 text-emerald-400'
+                  : 'border-red-500/30 bg-red-500/10 text-red-400'
+              }`}
+            >
+              <span>{feedback.message}</span>
+              <button type="button" onClick={() => setFeedback(null)} className="text-white/50 hover:text-white" aria-label="Dismiss message">
+                ✕
+              </button>
+            </div>
+          )}
+
+          {loadError && (
+            <div role="alert" className="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-red-500/30 bg-red-500/10 p-3.5 text-xs text-red-400">
+              <span>{loadError}</span>
+              <button
+                type="button"
+                onClick={() => void loadInstitutionData()}
+                className="rounded-lg border border-red-500/30 px-3 py-1.5 font-bold hover:bg-red-500/10"
+              >
+                Retry
+              </button>
+            </div>
+          )}
+
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <h2 className="text-xl font-bold text-white tracking-wide" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                 Partner Institutions ({institutions.length})
               </h2>
               <p className="text-xs text-[#888]">
-                Manage affiliated schools, campuses, and authorized branch heads
+                Manage affiliated schools, campuses, and assign one institution head per institution
               </p>
             </div>
             <div className="flex items-center gap-3">
@@ -124,7 +301,7 @@ export default function InstitutionsPage() {
                   type="text"
                   placeholder="Search institutions..."
                   value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
+                  onChange={(event) => setSearchQuery(event.target.value)}
                   className="px-3.5 py-2 pl-9 rounded-xl text-xs text-white placeholder:text-[#555] outline-none"
                   style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}
                 />
@@ -134,7 +311,8 @@ export default function InstitutionsPage() {
               </div>
 
               <button
-                onClick={() => setShowModal(true)}
+                type="button"
+                onClick={openCreateModal}
                 className="px-4 py-2 rounded-xl text-xs font-bold text-[#0D0D0D] transition-all hover:brightness-110 flex items-center gap-1.5 shadow-md"
                 style={{
                   background: 'linear-gradient(135deg, #D4A843 0%, #F5A623 100%)',
@@ -149,13 +327,12 @@ export default function InstitutionsPage() {
             </div>
           </div>
 
-          {/* Quick Metrics */}
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {[
               { label: 'Total Institutions', value: institutions.length, color: '#D4A843' },
-              { label: 'Active Branches', value: institutions.reduce((acc, i) => acc + i.branches, 0), color: '#00BCD4' },
-              { label: 'Active Batches', value: institutions.reduce((acc, i) => acc + i.batches, 0), color: '#7C4DFF' },
-              { label: 'Enrolled Learners', value: institutions.reduce((acc, i) => acc + i.students, 0), color: '#4CAF50' },
+              { label: 'Active Branches', value: totals.branches, color: '#00BCD4' },
+              { label: 'Active Batches', value: totals.batches, color: '#7C4DFF' },
+              { label: 'Enrolled Learners', value: totals.students, color: '#4CAF50' },
             ].map((metric) => (
               <div
                 key={metric.label}
@@ -170,62 +347,95 @@ export default function InstitutionsPage() {
             ))}
           </div>
 
-          {/* Institutions Table */}
           <GlassCard title="Institutions & Branch Roster">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full table-auto text-sm">
                 <thead>
                   <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                    {['Institution / Code', 'Branch / Contact Head', 'Branches', 'Batches', 'Students', 'Status', 'Actions'].map((h) => (
-                      <th key={h} className="text-left pb-3 pr-4 text-[11px] font-semibold text-[#888] uppercase tracking-wider">
-                        {h}
+                    {['Institution / Code', 'Institution Head', 'Branches', 'Batches', 'Students', 'Status', 'Actions'].map((heading) => (
+                      <th key={heading} className="text-left pb-3 pr-4 text-[11px] font-semibold text-[#888] uppercase tracking-wider">
+                        {heading}
                       </th>
                     ))}
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.04]">
-                  {filtered.map((inst) => (
-                    <tr key={inst.id} className="hover:bg-white/[0.02] transition-colors">
-                      <td className="py-4 pr-4">
-                        <div className="font-semibold text-white text-sm" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                          {inst.name}
-                        </div>
-                        <div className="text-[11px] text-[#D4A843] font-mono mt-0.5">
-                          {inst.code}
-                        </div>
-                      </td>
-                      <td className="py-4 pr-4">
-                        <div className="text-white text-sm">{inst.head}</div>
-                        <div className="text-xs text-[#777]">{inst.email}</div>
-                      </td>
-                      <td className="py-4 pr-4 text-sm font-semibold text-white/90">
-                        {inst.branches}
-                      </td>
-                      <td className="py-4 pr-4">
-                        <span className="px-2 py-0.5 rounded-md text-xs font-bold text-[#D4A843] bg-[#D4A843]/10 border border-[#D4A843]/20">
-                          {inst.batches} Batches
-                        </span>
-                      </td>
-                      <td className="py-4 pr-4 text-sm text-white/80 font-medium">
-                        {inst.students} Learners
-                      </td>
-                      <td className="py-4 pr-4">
-                        <span className="px-2.5 py-1 rounded-full text-xs font-semibold text-emerald-400 bg-emerald-500/10 border border-emerald-500/20">
-                          {inst.status}
-                        </span>
-                      </td>
-                      <td className="py-4">
-                        <div className="flex items-center gap-2">
-                          <a
-                            href={`/dashboard/admin/batches?institution=${inst.id}`}
-                            className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#D4A843] hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
-                          >
-                            View Batches
-                          </a>
-                        </div>
+                  {isLoading ? (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-sm text-[#888]">Loading institutions…</td>
+                    </tr>
+                  ) : filtered.length === 0 ? (
+                    <tr>
+                      <td colSpan={7} className="py-10 text-center text-sm text-[#888]">
+                        {institutions.length === 0
+                          ? 'No institutions have been registered yet.'
+                          : 'No institutions match your search.'}
                       </td>
                     </tr>
-                  ))}
+                  ) : (
+                    filtered.map((institution) => (
+                      <tr key={institution.id} className="hover:bg-white/[0.02] transition-colors">
+                        <td className="py-4 pr-4">
+                          <div className="font-semibold text-white text-sm" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                            {institution.name}
+                          </div>
+                          <div className="text-[11px] text-[#D4A843] font-mono mt-0.5">
+                            {institution.code}
+                          </div>
+                        </td>
+                        <td className="py-4 pr-4">
+                          {institution.headName ? (
+                            <>
+                              <div className="text-white text-sm">{institution.headName}</div>
+                              <div className="text-xs text-[#777]">{institution.headEmail || institution.headPhone || 'Institution head'}</div>
+                            </>
+                          ) : (
+                            <>
+                              <div className="text-sm font-medium text-amber-400">Unassigned</div>
+                              <div className="text-xs text-[#777]">Assign an institution head</div>
+                            </>
+                          )}
+                        </td>
+                        <td className="py-4 pr-4 text-sm font-semibold text-white/90 whitespace-normal overflow-wrap:break-word">
+                          {institution.branchesCount}
+                        </td>
+                        <td className="py-4 pr-4">
+                          <span className="px-2 py-0.5 rounded-md text-xs font-bold text-[#D4A843] bg-[#D4A843]/10 border border-[#D4A843]/20">
+                            {institution.batchesCount} Batches
+                          </span>
+                        </td>
+                        <td className="py-4 pr-4 text-sm text-white/80 font-medium">
+                          {institution.studentsCount} Learners
+                        </td>
+                        <td className="py-4 pr-4">
+                          <span className={`px-2.5 py-1 rounded-full text-xs font-semibold border ${
+                            institution.status.toLowerCase() === 'active'
+                              ? 'text-emerald-400 bg-emerald-500/10 border-emerald-500/20'
+                              : 'text-amber-400 bg-amber-500/10 border-amber-500/20'
+                          }`}>
+                            {statusLabel(institution.status)}
+                          </span>
+                        </td>
+                        <td className="py-4">
+                          <div className="flex flex-wrap items-center gap-2">
+                            <button
+                              type="button"
+                              onClick={() => openAssignModal(institution)}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-[#D4A843] hover:text-white bg-[#D4A843]/10 hover:bg-[#D4A843]/20 border border-[#D4A843]/20 transition-colors"
+                            >
+                              Assign Head
+                            </button>
+                            <a
+                              href={`/dashboard/admin/batches?institution=${institution.id}`}
+                              className="px-2.5 py-1.5 rounded-lg text-xs font-semibold text-white/70 hover:text-white bg-white/[0.04] hover:bg-white/[0.08] border border-white/[0.08] transition-colors"
+                            >
+                              View Batches
+                            </a>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
                 </tbody>
               </table>
             </div>
@@ -233,11 +443,10 @@ export default function InstitutionsPage() {
         </main>
       </div>
 
-      {/* Add Institution Modal */}
-      {showModal && (
+      {showCreateModal && (
         <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
           <div
-            className="w-full max-w-lg rounded-2xl p-6 relative"
+            className="w-full max-w-lg rounded-2xl p-6 relative max-h-[90vh] overflow-y-auto"
             style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}
           >
             <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.08]">
@@ -245,11 +454,13 @@ export default function InstitutionsPage() {
                 <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
                   Add Partner Institution
                 </h3>
-                <p className="text-xs text-[#888]">Register a school or academic partner</p>
+                <p className="text-xs text-[#888]">Register a school or academic partner and optionally assign its head</p>
               </div>
               <button
-                onClick={() => setShowModal(false)}
+                type="button"
+                onClick={closeCreateModal}
                 className="p-1 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                aria-label="Close create institution dialog"
               >
                 ✕
               </button>
@@ -262,8 +473,9 @@ export default function InstitutionsPage() {
                   <input
                     type="text"
                     required
+                    maxLength={160}
                     value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
+                    onChange={(event) => setNewName(event.target.value)}
                     placeholder="e.g. Greenwood International School"
                     className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
                   />
@@ -273,8 +485,9 @@ export default function InstitutionsPage() {
                   <input
                     type="text"
                     required
+                    maxLength={40}
                     value={newCode}
-                    onChange={(e) => setNewCode(e.target.value)}
+                    onChange={(event) => setNewCode(event.target.value.toUpperCase())}
                     placeholder="e.g. GWIS-01"
                     className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843] uppercase"
                   />
@@ -283,21 +496,45 @@ export default function InstitutionsPage() {
                   <label className="block text-xs font-medium text-[#AAA] mb-1">Initial Campus / Branch</label>
                   <input
                     type="text"
+                    maxLength={120}
                     value={newBranchName}
-                    onChange={(e) => setNewBranchName(e.target.value)}
+                    onChange={(event) => setNewBranchName(event.target.value)}
                     placeholder="e.g. Main Campus"
                     className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
                   />
                 </div>
               </div>
 
+              <div>
+                <label className="block text-xs font-medium text-[#AAA] mb-1">Institution Head</label>
+                <select
+                  value={newHeadUserId}
+                  onChange={(event) => setNewHeadUserId(event.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
+                >
+                  <option value="">Unassigned</option>
+                  {activeHeads.map((head) => (
+                    <option key={head.id} value={head.id}>
+                      {head.fullName} {head.email ? `— ${head.email}` : ''}
+                    </option>
+                  ))}
+                </select>
+                {activeHeads.length === 0 && (
+                  <p className="mt-1 text-[11px] text-amber-400">
+                    No active institution head users found. Create one from the{' '}
+                    <a href="/dashboard/admin/users?action=create" className="underline">Users page</a> first.
+                  </p>
+                )}
+              </div>
+
               <div className="grid grid-cols-2 gap-3">
                 <div className="col-span-2">
-                  <label className="block text-xs font-medium text-[#AAA] mb-1">Head / Primary Contact Person</label>
+                  <label className="block text-xs font-medium text-[#AAA] mb-1">Contact Person</label>
                   <input
                     type="text"
-                    value={newHead}
-                    onChange={(e) => setNewHead(e.target.value)}
+                    maxLength={160}
+                    value={newContactPerson}
+                    onChange={(event) => setNewContactPerson(event.target.value)}
                     placeholder="e.g. Dr. Rajesh Sharma"
                     className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
                   />
@@ -306,8 +543,9 @@ export default function InstitutionsPage() {
                   <label className="block text-xs font-medium text-[#AAA] mb-1">Official Email</label>
                   <input
                     type="email"
+                    maxLength={160}
                     value={newEmail}
-                    onChange={(e) => setNewEmail(e.target.value)}
+                    onChange={(event) => setNewEmail(event.target.value)}
                     placeholder="head@partner.edu"
                     className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
                   />
@@ -316,31 +554,123 @@ export default function InstitutionsPage() {
                   <label className="block text-xs font-medium text-[#AAA] mb-1">Phone Number</label>
                   <input
                     type="tel"
+                    maxLength={40}
                     value={newPhone}
-                    onChange={(e) => setNewPhone(e.target.value)}
+                    onChange={(event) => setNewPhone(event.target.value)}
                     placeholder="+91 98765 XXXXX"
                     className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
                   />
                 </div>
               </div>
 
+              {createError && (
+                <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                  {createError}
+                </p>
+              )}
+
               <div className="flex justify-end gap-3 pt-3 border-t border-white/[0.08]">
                 <button
                   type="button"
-                  onClick={() => setShowModal(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 transition-colors"
+                  onClick={closeCreateModal}
+                  disabled={isCreating}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  className="px-5 py-2 rounded-xl text-xs font-bold text-[#0D0D0D] transition-all hover:brightness-110"
+                  disabled={isCreating}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-[#0D0D0D] transition-all hover:brightness-110 disabled:opacity-60"
                   style={{
                     background: 'linear-gradient(135deg, #D4A843 0%, #F5A623 100%)',
                     fontFamily: 'Space Grotesk, sans-serif'
                   }}
                 >
-                  Save & Register Institution
+                  {isCreating ? 'Saving…' : 'Save & Register Institution'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {assigningInstitution && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-sm">
+          <div
+            className="w-full max-w-md rounded-2xl p-6 relative"
+            style={{ background: '#141414', border: '1px solid rgba(255,255,255,0.1)', boxShadow: '0 25px 50px rgba(0,0,0,0.8)' }}
+          >
+            <div className="flex items-center justify-between pb-4 mb-4 border-b border-white/[0.08]">
+              <div>
+                <h3 className="text-lg font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                  Assign Institution Head
+                </h3>
+                <p className="text-xs text-[#888]">
+                  {assigningInstitution.name} · {assigningInstitution.code}
+                </p>
+              </div>
+              <button
+                type="button"
+                onClick={closeAssignModal}
+                className="p-1 rounded-lg hover:bg-white/10 text-white/50 hover:text-white transition-colors"
+                aria-label="Close assign head dialog"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleAssignHead} className="space-y-4">
+              <div>
+                <label className="block text-xs font-medium text-[#AAA] mb-1">Institution Head</label>
+                <select
+                  value={assignHeadUserId}
+                  onChange={(event) => setAssignHeadUserId(event.target.value)}
+                  className="w-full px-3 py-2 rounded-xl text-xs text-white bg-[#1A1A1A] border border-white/10 outline-none focus:border-[#D4A843]"
+                >
+                  <option value="">Unassigned</option>
+                  {eligibleHeads.map((head) => (
+                    <option key={head.id} value={head.id} disabled={head.status !== 'active' && head.id !== assigningInstitution.headUserId}>
+                      {head.fullName} {head.email ? `— ${head.email}` : ''}{head.status !== 'active' ? ' (inactive)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="mt-2 text-[11px] leading-relaxed text-[#777]">
+                  A user can lead only one institution. Selecting a head here will update the institution immediately.
+                </p>
+                {eligibleHeads.length === 0 && (
+                  <p className="mt-1 text-[11px] text-amber-400">
+                    No institution head users exist yet. Create one from the{' '}
+                    <a href="/dashboard/admin/users?action=create" className="underline">Users page</a>.
+                  </p>
+                )}
+              </div>
+
+              {assignError && (
+                <p role="alert" className="rounded-xl border border-red-500/30 bg-red-500/10 px-3 py-2 text-xs text-red-400">
+                  {assignError}
+                </p>
+              )}
+
+              <div className="flex justify-end gap-3 pt-3 border-t border-white/[0.08]">
+                <button
+                  type="button"
+                  onClick={closeAssignModal}
+                  disabled={isAssigning}
+                  className="px-4 py-2 rounded-xl text-xs font-semibold text-white/70 hover:text-white bg-white/5 hover:bg-white/10 transition-colors disabled:opacity-50"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isAssigning}
+                  className="px-5 py-2 rounded-xl text-xs font-bold text-[#0D0D0D] transition-all hover:brightness-110 disabled:opacity-60"
+                  style={{
+                    background: 'linear-gradient(135deg, #D4A843 0%, #F5A623 100%)',
+                    fontFamily: 'Space Grotesk, sans-serif'
+                  }}
+                >
+                  {isAssigning ? 'Saving…' : 'Save Assignment'}
                 </button>
               </div>
             </form>

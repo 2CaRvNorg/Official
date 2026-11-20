@@ -1,9 +1,10 @@
 'use client';
 
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import Sidebar, { NavItem } from '@/components/dashboard/Sidebar';
 import TopBar from '@/components/dashboard/TopBar';
 import GlassCard from '@/components/dashboard/GlassCard';
+import { createClient } from '@/lib/supabase/client';
 
 const NAV_ITEMS: NavItem[] = [
   { label: 'Overview', href: '/dashboard/admin', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
@@ -84,6 +85,7 @@ const INITIAL_TRANSACTIONS: FinancialTransaction[] = [
 ];
 
 export default function FinanceManagementPage() {
+  const [account, setAccount] = useState<{ full_name: string; role: string } | null>(null);
   const [transactions, setTransactions] = useState<FinancialTransaction[]>(INITIAL_TRANSACTIONS);
   const [showAddModal, setShowAddModal] = useState(false);
   const [showCorrectionModal, setShowCorrectionModal] = useState<FinancialTransaction | null>(null);
@@ -97,6 +99,34 @@ export default function FinanceManagementPage() {
   const [newEntity, setNewEntity] = useState('');
   const [newAmount, setNewAmount] = useState('');
   const [newMethod, setNewMethod] = useState<'UPI' | 'Bank Transfer' | 'Cash'>('UPI');
+
+  useEffect(() => {
+    let active = true;
+
+    const loadAccount = async () => {
+      const supabase = createClient();
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) return;
+
+      const { data } = await supabase
+        .from('profiles')
+        .select('full_name, role')
+        .eq('id', user.id)
+        .maybeSingle();
+
+      if (active && data) setAccount(data);
+    };
+
+    void loadAccount();
+    return () => {
+      active = false;
+    };
+  }, []);
+
+  const accountName = account?.full_name ?? 'Account';
+  const accountInitials = account?.full_name
+    ? account.full_name.split(/\s+/).slice(0, 2).map((part) => part[0]).join('').toUpperCase()
+    : 'AC';
 
   // Stats calculation (INR)
   const totalIncome = transactions
@@ -159,15 +189,15 @@ export default function FinanceManagementPage() {
 
   return (
     <div className="flex min-h-screen" style={{ background: '#0D0D0D' }}>
-      <Sidebar navItems={NAV_ITEMS} userName="Super Admin" userRole="Administrator" avatarInitials="SA" />
+      <Sidebar navItems={NAV_ITEMS} userName={accountName} userRole="Administrator" avatarInitials={accountInitials} />
 
       <div className="flex-1 flex flex-col md:ml-[230px]">
         <TopBar
           title="Internal Financial Recordkeeping"
           subtitle="Money Management ledger, immutable correction approvals & cashbook audit"
           notificationCount={1}
-          userName="Super Admin"
-          avatarInitials="SA"
+          userName={accountName}
+          avatarInitials={accountInitials}
         />
 
         <main className="flex-1 p-5 pb-20 md:pb-6 space-y-5">

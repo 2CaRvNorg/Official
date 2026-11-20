@@ -1,331 +1,335 @@
 'use client';
 
 import { useState } from 'react';
-import Sidebar, { NavItem } from '@/components/dashboard/Sidebar';
-import TopBar from '@/components/dashboard/TopBar';
+import Link from 'next/link';
 import GlassCard from '@/components/dashboard/GlassCard';
-import MiniSparkline from '@/components/dashboard/MiniSparkline';
+import InstitutionPage from '@/components/dashboard/institution/InstitutionPage';
+import {
+  attendanceColor,
+  formatDate,
+  formatDateTime,
+  formatPercent,
+  getInitials,
+  statusLabel,
+  type InstitutionDashboardData,
+  type InstitutionStudent,
+} from '@/lib/institution';
 
-const NAV_ITEMS: NavItem[] = [
-  { label: 'Dashboard', href: '/dashboard/institution', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg> },
-  { label: 'Batches & Progress', href: '/dashboard/institution/batches', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M23 21v-2a4 4 0 00-3-3.87"/><path d="M16 3.13a4 4 0 010 7.75"/></svg> },
-  { label: 'Student Roster', href: '/dashboard/institution/students', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg> },
-  { label: 'Teacher Schedule', href: '/dashboard/institution/schedule', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><rect x="3" y="4" width="18" height="18" rx="2" ry="2"/><line x1="16" y1="2" x2="16" y2="6"/><line x1="8" y1="2" x2="8" y2="6"/><line x1="3" y1="10" x2="21" y2="10"/></svg> },
-  { label: 'Support & Alerts', href: '/dashboard/institution/alerts', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/></svg> },
-  { label: 'Reports', href: '/dashboard/institution/reports', icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/></svg> },
-];
+function combinedAttendance(students: InstitutionStudent[]) {
+  const total = students.reduce((sum, student) => sum + student.attendanceTotal, 0);
+  const present = students.reduce((sum, student) => sum + student.attendancePresent, 0);
+  if (total === 0) return null;
+  return Math.round((present / total) * 1000) / 10;
+}
 
-const QUICK_STATS = [
-  { label: 'Active Batches', value: 12, icon: '📚', color: '#D4A843' },
-  { label: 'Enrolled Students', value: 450, icon: '🎓', color: '#00BCD4' },
-  { label: 'Teacher Attendance', value: '96%', icon: '👩‍🏫', color: '#4CAF50' },
-  { label: 'Support Alerts', value: 4, icon: '⚠️', color: '#FF9800' },
-];
+function DashboardContent({ data }: { data: InstitutionDashboardData }) {
+  const institution = data.institution;
+  const [branchId, setBranchId] = useState('all');
 
-const BATCHES = [
-  {
-    name: 'Batch A — 7th Grade',
-    subject: 'Design + Communication',
-    checkpoints: [100, 90, 70, 20, 0],
-    labels: ['Week 1', 'Week 4', 'Week 8', 'Week 16', 'Week 24'],
-    color: '#D4A843',
-    progress: 55,
-  },
-  {
-    name: 'Batch B — 8th Grade',
-    subject: 'Web Basics + Design',
-    checkpoints: [100, 85, 50, 0, 0],
-    labels: ['Week 1', 'Week 4', 'Week 8', 'Week 16', 'Week 24'],
-    color: '#00BCD4',
-    progress: 38,
-  },
-  {
-    name: 'Batch C — 9th Grade',
-    subject: 'Design + Communication',
-    checkpoints: [100, 95, 88, 60, 10],
-    labels: ['Week 1', 'Week 4', 'Week 8', 'Week 16', 'Week 24'],
-    color: '#7C4DFF',
-    progress: 72,
-  },
-];
+  if (!institution) return null;
 
-const STUDENTS = [
-  { name: 'Aarav Kumar', batch: 'Batch A', attendance: 68, sparkline: [70, 65, 60, 72, 68] },
-  { name: 'Meera Joshi', batch: 'Batch B', attendance: 94, sparkline: [90, 95, 92, 94, 93] },
-  { name: 'Rahul Singh', batch: 'Batch C', attendance: 88, sparkline: [80, 85, 90, 88, 86] },
-  { name: 'Priya Reddy', batch: 'Batch A', attendance: 97, sparkline: [95, 96, 98, 97, 97] },
-  { name: 'Kiran Patel', batch: 'Batch C', attendance: 75, sparkline: [80, 76, 72, 74, 75] },
-];
+  const branches = institution.branches;
+  const batches = branchId === 'all'
+    ? data.batches
+    : data.batches.filter((batch) => batch.branchId === branchId);
+  const batchIds = new Set(batches.map((batch) => batch.id));
+  const students = branchId === 'all'
+    ? data.students
+    : data.students.filter((student) => batchIds.has(student.batchId));
+  const alerts = branchId === 'all'
+    ? data.alerts
+    : data.alerts.filter((alert) => !alert.batchId || batchIds.has(alert.batchId));
+  const branchLiveClasses = branchId === 'all'
+    ? data.liveClasses
+    : data.liveClasses.filter((liveClass) => batchIds.has(liveClass.batchId));
 
-const TEACHER_SCHEDULES = [
-  { name: 'Ms. Priya Nair', subject: 'Design · Batch A', time: '10:00–11:00 AM', day: 'Mon, Wed, Fri' },
-  { name: 'Mr. Rahul Verma', subject: 'Web Dev · Batch B', time: '1:00–2:00 PM', day: 'Tue, Thu' },
-  { name: 'Ms. Anjali Roy', subject: 'Communication · Batch A', time: '3:00–4:00 PM', day: 'Mon, Wed' },
-  { name: 'Mr. Dev Kumar', subject: 'Design · Batch C', time: '11:00 AM–12:00 PM', day: 'Tue, Thu, Sat' },
-];
+  const activeBatches = batches.filter((batch) => batch.status === 'active').length;
+  const enrolledStudents = new Set(students.map((student) => student.studentId)).size;
+  const attendanceRate = branchId === 'all' ? data.reports.attendanceRate : combinedAttendance(students);
+  const selectedBranch = branches.find((branch) => branch.id === branchId);
 
-const ALERTS = [
-  {
-    student: 'Aarav K.',
-    issue: 'Low attendance (3 missed classes)',
-    severity: 'high',
-    batch: 'Batch A',
-  },
-  {
-    student: 'Batch C',
-    issue: 'Missed assignment submission deadline',
-    severity: 'medium',
-    batch: 'Batch C',
-  },
-];
-
-export default function InstitutionDashboard() {
-  const [branch, setBranch] = useState('Hitech City Branch');
+  const quickStats = [
+    { label: 'Active Batches', value: activeBatches.toLocaleString(), icon: '📚', color: '#D4A843' },
+    { label: 'Enrolled Students', value: enrolledStudents.toLocaleString(), icon: '🎓', color: '#00BCD4' },
+    { label: 'Attendance Rate', value: formatPercent(attendanceRate), icon: '✅', color: '#4CAF50' },
+    { label: 'Support Alerts', value: alerts.length.toLocaleString(), icon: '⚠️', color: '#FF9800' },
+  ];
 
   return (
-    <div className="flex min-h-screen" style={{ background: '#0D0D0D' }}>
-      <Sidebar navItems={NAV_ITEMS} userName="Amit Sen" userRole="Institution Head" avatarInitials="AS" />
-
-      <div className="flex-1 flex flex-col md:ml-[220px]">
-        {/* Custom top bar with branch selector */}
-        <header
-          className="sticky top-0 z-30 flex flex-wrap items-center justify-between gap-3 px-5 py-3"
-          style={{ background: 'rgba(13,13,13,0.9)', backdropFilter: 'blur(12px)', borderBottom: '1px solid rgba(255,255,255,0.07)' }}
-        >
-          {/* Branch selector */}
-          <select
-            value={branch}
-            onChange={(e) => setBranch(e.target.value)}
-            className="px-4 py-2 rounded-xl text-sm font-semibold text-white outline-none"
-            style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.3)', color: '#D4A843', fontFamily: 'Space Grotesk, sans-serif' }}
-          >
-            {['Hitech City Branch', 'Madhapur Branch', 'Gachibowli Branch'].map((b) => (
-              <option key={b} value={b} style={{ background: '#1A1A1A', color: '#fff' }}>{b}</option>
-            ))}
-          </select>
-
-          <div className="flex items-center gap-3">
-            <div className="hidden sm:flex items-center gap-2 px-3 py-2 rounded-xl" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#888888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/>
-              </svg>
-              <input type="text" placeholder="Search..." className="bg-transparent outline-none text-xs text-white placeholder:text-[#555555] w-28"/>
-            </div>
-            <button className="relative p-2 rounded-xl hover:bg-white/5" aria-label="Notifications">
-              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#888888" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/><path d="M13.73 21a2 2 0 01-3.46 0"/>
-              </svg>
-              <span className="absolute top-1 right-1 w-4 h-4 rounded-full flex items-center justify-center text-[9px] font-bold" style={{ background: '#D4A843', color: '#0D0D0D', fontFamily: 'Space Grotesk, sans-serif' }}>4</span>
-            </button>
-            {/* Date filter */}
-            <div className="px-3 py-2 rounded-xl text-xs font-medium" style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)', color: '#888', fontFamily: 'Space Grotesk, sans-serif' }}>
-              Nov 2026
-            </div>
-            <div className="w-8 h-8 rounded-full flex items-center justify-center text-xs font-bold" style={{ background: 'rgba(212,168,67,0.2)', color: '#D4A843', border: '1px solid rgba(212,168,67,0.3)', fontFamily: 'Space Grotesk, sans-serif' }}>
-              AS
-            </div>
-          </div>
-        </header>
-
-        <main className="flex-1 p-5 pb-20 md:pb-5 space-y-5">
-          {/* Welcome Banner */}
-          <div
-            className="rounded-xl p-5"
-            style={{ background: 'linear-gradient(135deg, rgba(212,168,67,0.18) 0%, rgba(13,13,13,0) 100%)', border: '1px solid rgba(212,168,67,0.2)' }}
-          >
-            <p className="text-xs mb-1" style={{ color: '#888' }}>Institution Head · {branch}</p>
+    <>
+      <div
+        className="rounded-xl p-5"
+        style={{ background: 'linear-gradient(135deg, rgba(212,168,67,0.18) 0%, rgba(13,13,13,0) 100%)', border: '1px solid rgba(212,168,67,0.2)' }}
+      >
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div>
+            <p className="mb-1 text-xs text-[#888]">
+              Institution Head · {institution.name} · {institution.code}
+            </p>
             <h2 className="text-xl font-bold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-              Hello, Amit Sen! 👋 Welcome back.
+              Hello, {data.viewer.fullName}! 👋 Welcome back.
             </h2>
+            <div className="mt-3 flex flex-wrap gap-x-5 gap-y-1 text-[11px] text-[#888]">
+              <span>{branches.length} branch{branches.length === 1 ? '' : 'es'}</span>
+              {institution.contactPerson && <span>Contact: {institution.contactPerson}</span>}
+              {institution.email && <span>{institution.email}</span>}
+              {institution.phone && <span>{institution.phone}</span>}
+            </div>
           </div>
 
-          {/* Quick Stats */}
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            {QUICK_STATS.map((stat) => (
-              <div
-                key={stat.label}
-                className="rounded-xl p-5 flex items-center gap-4"
-                style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}
+          {branches.length > 1 && (
+            <label className="text-[11px] text-[#888]">
+              <span className="mb-1 block">Campus / branch</span>
+              <select
+                value={branchId}
+                onChange={(event) => setBranchId(event.target.value)}
+                className="rounded-xl px-3 py-2 text-xs font-semibold outline-none"
+                style={{ background: 'rgba(212,168,67,0.1)', border: '1px solid rgba(212,168,67,0.3)', color: '#D4A843', fontFamily: 'Space Grotesk, sans-serif' }}
               >
-                <div
-                  className="w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0"
-                  style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}25` }}
-                >
-                  {stat.icon}
-                </div>
-                <div>
-                  <div className="text-xl font-bold" style={{ color: stat.color, fontFamily: 'Space Grotesk, sans-serif' }}>
-                    {stat.value}
-                  </div>
-                  <div className="text-xs" style={{ color: '#888' }}>{stat.label}</div>
-                </div>
-              </div>
-            ))}
-          </div>
-
-          {/* Two-column layout */}
-          <div className="grid grid-cols-1 xl:grid-cols-3 gap-5">
-            {/* Left */}
-            <div className="xl:col-span-2 space-y-5">
-              {/* Batch Progress */}
-              <GlassCard title="Batch Progress">
-                <div className="space-y-5">
-                  {BATCHES.map((batch) => (
-                    <div key={batch.name}>
-                      <div className="flex items-center justify-between mb-2">
-                        <div>
-                          <div className="text-sm font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                            {batch.name}
-                          </div>
-                          <div className="text-xs mt-0.5" style={{ color: '#666' }}>{batch.subject}</div>
-                        </div>
-                        <span className="text-sm font-bold" style={{ color: batch.color, fontFamily: 'Space Grotesk, sans-serif' }}>
-                          {batch.progress}%
-                        </span>
-                      </div>
-                      {/* Stacked progress bar with checkpoint markers */}
-                      <div className="relative h-3 rounded-full overflow-hidden" style={{ background: 'rgba(255,255,255,0.08)' }}>
-                        <div
-                          className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000"
-                          style={{ width: `${batch.progress}%`, background: `linear-gradient(90deg, ${batch.color}, ${batch.color}aa)` }}
-                        />
-                      </div>
-                      {/* Checkpoint labels */}
-                      <div className="flex justify-between mt-1">
-                        {batch.labels.map((label) => (
-                          <span key={label} className="text-[9px]" style={{ color: '#444', fontFamily: 'Space Grotesk, sans-serif' }}>
-                            {label}
-                          </span>
-                        ))}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
-
-              {/* Student Attendance Table */}
-              <GlassCard title="Student Attendance & Performance">
-                <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
-                    <thead>
-                      <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
-                        {['Name', 'Batch', 'Attendance %', 'Tracker'].map((h) => (
-                          <th key={h} className="text-left pb-3 pr-4" style={{ color: '#555', fontSize: 11, fontWeight: 500, fontFamily: 'Space Grotesk, sans-serif' }}>
-                            {h}
-                          </th>
-                        ))}
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {STUDENTS.map((student) => (
-                        <tr key={student.name} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
-                          <td className="py-3 pr-4">
-                            <div className="flex items-center gap-2">
-                              <div
-                                className="w-7 h-7 rounded-full flex items-center justify-center text-xs font-bold"
-                                style={{ background: 'rgba(212,168,67,0.15)', color: '#D4A843', fontFamily: 'Space Grotesk, sans-serif' }}
-                              >
-                                {student.name[0]}
-                              </div>
-                              <span className="text-sm font-medium text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                                {student.name}
-                              </span>
-                            </div>
-                          </td>
-                          <td className="py-3 pr-4 text-xs" style={{ color: '#888' }}>{student.batch}</td>
-                          <td className="py-3 pr-4">
-                            <span
-                              className="text-sm font-bold"
-                              style={{
-                                color: student.attendance >= 90 ? '#4CAF50' : student.attendance >= 75 ? '#FF9800' : '#FF5252',
-                                fontFamily: 'Space Grotesk, sans-serif',
-                              }}
-                            >
-                              {student.attendance}%
-                            </span>
-                          </td>
-                          <td className="py-3">
-                            <MiniSparkline
-                              values={student.sparkline}
-                              color={student.attendance >= 90 ? '#4CAF50' : student.attendance >= 75 ? '#FF9800' : '#FF5252'}
-                            />
-                          </td>
-                        </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                </div>
-              </GlassCard>
-            </div>
-
-            {/* Right column */}
-            <div className="space-y-5">
-              {/* Teacher Schedules */}
-              <GlassCard title="Teacher Schedules">
-                <div className="space-y-3">
-                  {TEACHER_SCHEDULES.map((teacher) => (
-                    <div
-                      key={teacher.name}
-                      className="p-3 rounded-xl"
-                      style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
-                    >
-                      <div className="text-sm font-semibold text-white mb-0.5" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                        {teacher.name}
-                      </div>
-                      <div className="text-xs mb-1" style={{ color: '#888' }}>{teacher.subject}</div>
-                      <div className="flex items-center gap-2 text-xs" style={{ color: '#666' }}>
-                        <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                          <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
-                        </svg>
-                        {teacher.time} · {teacher.day}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
-
-              {/* Alerts */}
-              <GlassCard title="Urgent Support & Intervention Alerts">
-                <div className="space-y-3">
-                  {ALERTS.map((alert, i) => (
-                    <div
-                      key={i}
-                      className="p-4 rounded-xl"
-                      style={{
-                        background: alert.severity === 'high' ? 'rgba(255,82,82,0.06)' : 'rgba(255,152,0,0.06)',
-                        border: `1px solid ${alert.severity === 'high' ? 'rgba(255,82,82,0.3)' : 'rgba(255,152,0,0.3)'}`,
-                      }}
-                    >
-                      <div className="flex items-start gap-2 mb-3">
-                        <span className="text-lg">{alert.severity === 'high' ? '🚨' : '⚠️'}</span>
-                        <div>
-                          <div className="text-sm font-semibold text-white mb-0.5" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
-                            {alert.student}
-                          </div>
-                          <div className="text-xs" style={{ color: 'rgba(255,255,255,0.55)' }}>
-                            {alert.issue}
-                          </div>
-                        </div>
-                      </div>
-                      <button
-                        className="w-full py-2 rounded-lg text-xs font-semibold transition-all hover:-translate-y-0.5"
-                        style={{
-                          background: alert.severity === 'high' ? 'rgba(255,82,82,0.15)' : 'rgba(255,152,0,0.15)',
-                          border: `1px solid ${alert.severity === 'high' ? 'rgba(255,82,82,0.4)' : 'rgba(255,152,0,0.4)'}`,
-                          color: alert.severity === 'high' ? '#FF5252' : '#FF9800',
-                          fontFamily: 'Space Grotesk, sans-serif',
-                        }}
-                      >
-                        Action required →
-                      </button>
-                    </div>
-                  ))}
-                </div>
-              </GlassCard>
-            </div>
-          </div>
-        </main>
+                <option value="all" style={{ background: '#1A1A1A', color: '#fff' }}>All branches</option>
+                {branches.map((branch) => (
+                  <option key={branch.id} value={branch.id} style={{ background: '#1A1A1A', color: '#fff' }}>
+                    {branch.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+        </div>
       </div>
-    </div>
+
+      <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+        {quickStats.map((stat) => (
+          <div
+            key={stat.label}
+            className="flex items-center gap-4 rounded-xl p-5"
+            style={{ background: '#1A1A1A', border: '1px solid rgba(255,255,255,0.08)' }}
+          >
+            <div
+              className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl text-xl"
+              style={{ background: `${stat.color}18`, border: `1px solid ${stat.color}25` }}
+            >
+              {stat.icon}
+            </div>
+            <div>
+              <div className="text-xl font-bold" style={{ color: stat.color, fontFamily: 'Space Grotesk, sans-serif' }}>
+                {stat.value}
+              </div>
+              <div className="text-xs text-[#888]">{stat.label}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <div className="grid grid-cols-1 gap-5 xl:grid-cols-3">
+        <div className="space-y-5 xl:col-span-2">
+          <GlassCard
+            title={selectedBranch ? `Batch Progress · ${selectedBranch.name}` : 'Batch Progress'}
+            action={<Link href="/dashboard/institution/batches" className="text-xs text-[#D4A843] hover:underline">View all</Link>}
+          >
+            {batches.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#888]">
+                {branches.length === 0
+                  ? 'No branches have been added to your institution yet.'
+                  : 'No batches have been created for this institution yet.'}
+              </p>
+            ) : (
+              <div className="space-y-5">
+                {batches.slice(0, 6).map((batch) => (
+                  <div key={batch.id}>
+                    <div className="mb-2 flex items-center justify-between gap-3">
+                      <div>
+                        <div className="text-sm font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          {batch.name}
+                        </div>
+                        <div className="mt-0.5 text-xs text-[#666]">
+                          {batch.programmeName} · {batch.grade || 'Grade not set'} · {batch.branchName}
+                        </div>
+                      </div>
+                      <span className="text-sm font-bold" style={{ color: attendanceColor(batch.completionRate), fontFamily: 'Space Grotesk, sans-serif' }}>
+                        {formatPercent(batch.completionRate)}
+                      </span>
+                    </div>
+                    <div className="relative h-3 overflow-hidden rounded-full" style={{ background: 'rgba(255,255,255,0.08)' }}>
+                      <div
+                        className="absolute left-0 top-0 h-full rounded-full transition-all duration-1000"
+                        style={{ width: `${Math.max(0, Math.min(100, batch.completionRate ?? 0))}%`, background: 'linear-gradient(90deg, #D4A843, #D4A843aa)' }}
+                      />
+                    </div>
+                    <div className="mt-1 flex justify-between text-[9px] text-[#555]" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      <span>{formatDate(batch.startDate)}</span>
+                      <span>{formatDate(batch.endDate)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassCard>
+
+          <GlassCard
+            title="Student Attendance & Performance"
+            action={<Link href="/dashboard/institution/students" className="text-xs text-[#D4A843] hover:underline">View roster</Link>}
+          >
+            {students.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#888]">No enrolled students have been found for this institution yet.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.07)' }}>
+                      {['Name', 'Batch', 'Attendance %', 'Pacing'].map((heading) => (
+                        <th key={heading} className="pb-3 pr-4 text-left" style={{ color: '#555', fontSize: 11, fontWeight: 500, fontFamily: 'Space Grotesk, sans-serif' }}>
+                          {heading}
+                        </th>
+                      ))}
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {students.slice(0, 10).map((student) => (
+                      <tr key={student.id} style={{ borderBottom: '1px solid rgba(255,255,255,0.04)' }}>
+                        <td className="py-3 pr-4">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className="flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold"
+                              style={{ background: 'rgba(212,168,67,0.15)', color: '#D4A843', fontFamily: 'Space Grotesk, sans-serif' }}
+                            >
+                              {getInitials(student.name).slice(0, 1)}
+                            </div>
+                            <span className="text-sm font-medium text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                              {student.name}
+                            </span>
+                          </div>
+                        </td>
+                        <td className="py-3 pr-4 text-xs text-[#888]">{student.batchName}</td>
+                        <td className="py-3 pr-4">
+                          <span className="text-sm font-bold" style={{ color: attendanceColor(student.attendanceRate), fontFamily: 'Space Grotesk, sans-serif' }}>
+                            {formatPercent(student.attendanceRate)}
+                          </span>
+                        </td>
+                        <td className="py-3 pr-4">
+                          <span className="rounded px-2 py-0.5 text-[10px] font-bold" style={{
+                            color: student.flag === 'Active' ? '#4CAF50' : student.flag === 'Warning' ? '#FF9800' : '#FF5252',
+                            background: student.flag === 'Active' ? 'rgba(76,175,80,0.1)' : student.flag === 'Warning' ? 'rgba(255,152,0,0.1)' : 'rgba(255,82,82,0.1)',
+                          }}>
+                            {student.pacingHealth}
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </GlassCard>
+        </div>
+
+        <div className="space-y-5">
+          <GlassCard
+            title="Teacher Schedules"
+            action={<Link href="/dashboard/institution/schedule" className="text-xs text-[#D4A843] hover:underline">View all</Link>}
+          >
+            {branchLiveClasses.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#888]">No live classes have been scheduled yet.</p>
+            ) : (
+              <div className="space-y-3">
+                {branchLiveClasses.slice(0, 4).map((liveClass) => (
+                  <div
+                    key={liveClass.id}
+                    className="rounded-xl p-3"
+                    style={{ background: 'rgba(255,255,255,0.03)', border: '1px solid rgba(255,255,255,0.07)' }}
+                  >
+                    <div className="mb-0.5 text-sm font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                      {liveClass.title}
+                    </div>
+                    <div className="mb-1 text-xs text-[#888]">
+                      {liveClass.subjectName} · {liveClass.batchName}
+                    </div>
+                    <div className="flex items-center gap-2 text-xs text-[#666]">
+                      <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                        <circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/>
+                      </svg>
+                      {formatDateTime(liveClass.scheduledStart)}
+                      {liveClass.teacherName ? ` · ${liveClass.teacherName}` : ''}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassCard>
+
+          <GlassCard
+            title="Urgent Support & Intervention Alerts"
+            action={<Link href="/dashboard/institution/alerts" className="text-xs text-[#D4A843] hover:underline">View all</Link>}
+          >
+            {alerts.length === 0 ? (
+              <p className="py-6 text-center text-sm text-[#888]">No active intervention alerts for this institution.</p>
+            ) : (
+              <div className="space-y-3">
+                {alerts.slice(0, 3).map((alert) => (
+                  <div
+                    key={alert.id}
+                    className="rounded-xl p-4"
+                    style={{
+                      background: alert.severity === 'high' ? 'rgba(255,82,82,0.06)' : 'rgba(255,152,0,0.06)',
+                      border: `1px solid ${alert.severity === 'high' ? 'rgba(255,82,82,0.3)' : 'rgba(255,152,0,0.3)'}`,
+                    }}
+                  >
+                    <div className="flex items-start gap-2">
+                      <span className="text-lg">{alert.severity === 'high' ? '🚨' : '⚠️'}</span>
+                      <div>
+                        <div className="mb-0.5 text-sm font-semibold text-white" style={{ fontFamily: 'Space Grotesk, sans-serif' }}>
+                          {alert.title}
+                        </div>
+                        <div className="text-xs leading-relaxed" style={{ color: 'rgba(255,255,255,0.55)' }}>
+                          {alert.description}
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </GlassCard>
+
+          <GlassCard title="Institution Details">
+            <dl className="space-y-2 text-xs">
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#777]">Status</dt>
+                <dd className="font-semibold text-emerald-400">{statusLabel(institution.status)}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#777]">Branches</dt>
+                <dd className="text-white">{branches.length}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#777]">Batches</dt>
+                <dd className="text-white">{data.reports.totalBatches}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#777]">Recorded classes</dt>
+                <dd className="text-white">{data.reports.totalClasses}</dd>
+              </div>
+              <div className="flex justify-between gap-4">
+                <dt className="text-[#777]">Attendance records</dt>
+                <dd className="text-white">{data.reports.attendanceTotal}</dd>
+              </div>
+            </dl>
+          </GlassCard>
+        </div>
+      </div>
+    </>
+  );
+}
+
+export default function InstitutionDashboard() {
+  return (
+    <InstitutionPage
+      title="Institution Dashboard"
+      subtitle={(data) => data?.institution
+        ? `${data.institution.name} · ${data.institution.code} · Live institution data`
+        : 'Live institution overview'}
+    >
+      {(data) => <DashboardContent data={data} />}
+    </InstitutionPage>
   );
 }

@@ -5,6 +5,7 @@ import Link from 'next/link';
 import Image from 'next/image';
 import { useRouter, useSearchParams } from 'next/navigation';
 import { createClient } from '@/lib/supabase/client';
+import { getRoleHome } from '@/lib/rbac';
 
 function LoginForm() {
   const router = useRouter();
@@ -84,25 +85,12 @@ function LoginForm() {
         }
 
         // Direct to role-based dashboard
-        switch (userRole) {
-          case 'admin':
-            router.push('/dashboard/admin');
-            break;
-          case 'teacher':
-            router.push('/dashboard/teacher');
-            break;
-          case 'institution_head':
-            router.push('/dashboard/institution');
-            break;
-          case 'student':
-            router.push('/dashboard/student');
-            break;
-          case 'money_management':
-            router.push('/dashboard/admin/finance');
-            break;
-          default:
-            await supabase.auth.signOut();
-            setErrorMsg('Your account has an unsupported role. Please contact your administrator.');
+        const roleHome = getRoleHome(userRole);
+        if (roleHome) {
+          router.push(roleHome);
+        } else {
+          await supabase.auth.signOut();
+          setErrorMsg('Your account has an unsupported role. Please contact your administrator.');
         }
       }
     } catch (err: unknown) {

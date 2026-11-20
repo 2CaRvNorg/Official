@@ -4,6 +4,65 @@
 @tailwind components;
 @tailwind utilities;
 
+@layer components {
+  .btn-gold {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 14px 32px;
+    background: linear-gradient(135deg, #F5A623, #FFD700);
+    color: #060918;
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    border-radius: 50px;
+    border: none;
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease;
+    box-shadow: 0 4px 20px rgba(245, 166, 35, 0.4);
+  }
+
+  .btn-gold:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(245, 166, 35, 0.6);
+  }
+
+  .btn-gold:active {
+    transform: translateY(0);
+  }
+
+  .btn-cyan {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 13px 32px;
+    background: transparent;
+    color: var(--cyan);
+    font-family: 'Space Grotesk', sans-serif;
+    font-weight: 700;
+    font-size: 0.95rem;
+    letter-spacing: 0.03em;
+    border-radius: 50px;
+    border: 1.5px solid var(--cyan);
+    cursor: pointer;
+    text-decoration: none;
+    transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
+    box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
+  }
+
+  .btn-cyan:hover {
+    transform: translateY(-2px);
+    background: rgba(0, 229, 255, 0.1);
+    box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
+  }
+
+  .btn-cyan:active {
+    transform: translateY(0);
+  }
+}
+
 /* ─── CSS Custom Properties ─────────────────────────────────────────────── */
 :root {
   --bg: #060918;
@@ -75,64 +134,6 @@ h1, h2, h3, h4, h5, h6 {
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
-}
-
-/* ─── Buttons ────────────────────────────────────────────────────────────── */
-.btn-gold {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 14px 32px;
-  background: linear-gradient(135deg, #F5A623, #FFD700);
-  color: #060918;
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-  border-radius: 50px;
-  border: none;
-  cursor: pointer;
-  text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
-  box-shadow: 0 4px 20px rgba(245, 166, 35, 0.4);
-}
-
-.btn-gold:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 8px 30px rgba(245, 166, 35, 0.6);
-}
-
-.btn-gold:active {
-  transform: translateY(0);
-}
-
-.btn-cyan {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 13px 32px;
-  background: transparent;
-  color: var(--cyan);
-  font-family: 'Space Grotesk', sans-serif;
-  font-weight: 700;
-  font-size: 0.95rem;
-  letter-spacing: 0.03em;
-  border-radius: 50px;
-  border: 1.5px solid var(--cyan);
-  cursor: pointer;
-  text-decoration: none;
-  transition: transform 0.2s ease, box-shadow 0.2s ease, background 0.2s ease;
-  box-shadow: 0 0 20px rgba(0, 229, 255, 0.2);
-}
-
-.btn-cyan:hover {
-  transform: translateY(-2px);
-  background: rgba(0, 229, 255, 0.1);
-  box-shadow: 0 0 30px rgba(0, 229, 255, 0.4);
-}
-
-.btn-cyan:active {
-  transform: translateY(0);
 }
 
 /* ─── Section Base ───────────────────────────────────────────────────────── */
@@ -261,6 +262,22 @@ h1, h2, h3, h4, h5, h6 {
 }
 
 /* ─── Glow dividers ──────────────────────────────────────────────────────── */
+.whatsapp-icon {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.whatsapp-cta svg {
+  min-width: 14px;
+  min-height: 14px;
+}
+
+.whatsapp-cta {
+  min-width: 112px;
+}
+
 .glow-divider {
   width: 80px;
   height: 3px;

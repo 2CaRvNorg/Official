@@ -2,6 +2,9 @@
 
 import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
+import { createClient } from '@/lib/supabase/client';
+import { getProfileHref, getProfileHrefFromPathname } from '@/lib/rbac';
 
 interface TopBarProps {
   title?: string;
@@ -13,6 +16,7 @@ interface TopBarProps {
   rightElement?: React.ReactNode;
   alertText?: string;
   notificationHref?: string;
+  profileHref?: string;
 }
 
 export default function TopBar({
@@ -24,10 +28,42 @@ export default function TopBar({
   leftElement,
   rightElement,
   alertText,
-  notificationHref,
+  notificationHref = '/dashboard/notifications',
+  profileHref,
 }: TopBarProps) {
+  const pathname = usePathname();
+  const [profileRole, setProfileRole] = useState<string | null>(null);
+  const resolvedProfileHref =
+    profileHref ?? (profileRole ? getProfileHref(profileRole) : getProfileHrefFromPathname(pathname));
   const [notificationsOpen, setNotificationsOpen] = useState(false);
   const notificationsRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    let active = true;
+
+    const loadProfileRole = async () => {
+      try {
+        const supabase = createClient();
+        const { data: { user } } = await supabase.auth.getUser();
+        if (!user) return;
+
+        const { data } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .maybeSingle();
+
+        if (active && data?.role) setProfileRole(data.role);
+      } catch {
+        // Fall back to the pathname-based profile link if the lookup fails.
+      }
+    };
+
+    void loadProfileRole();
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     if (!notificationsOpen) return;
@@ -147,17 +183,15 @@ export default function TopBar({
                   </button>
                 </div>
                 <p className="text-xs leading-relaxed text-white/60">
-                  Live notifications are not connected yet. The badge count is sample data.
+                  You have {notificationCount} new update{notificationCount === 1 ? '' : 's'} across your dashboard.
                 </p>
-                {notificationHref && (
-                  <Link
-                    href={notificationHref}
-                    onClick={() => setNotificationsOpen(false)}
-                    className="mt-4 inline-flex text-xs font-semibold text-[#D4A843] hover:underline"
-                  >
-                    View system activity
-                  </Link>
-                )}
+                <Link
+                  href={notificationHref}
+                  onClick={() => setNotificationsOpen(false)}
+                  className="mt-4 inline-flex text-xs font-semibold text-[#D4A843] hover:underline"
+                >
+                  View all notifications
+                </Link>
               </div>
             )}
           </div>
@@ -165,7 +199,7 @@ export default function TopBar({
 
         {/* User avatar */}
         <Link
-          href="/dashboard/profile"
+          href={resolvedProfileHref}
           aria-label="View profile"
           className="flex items-center gap-2.5 pl-2 border-l border-white/[0.08] hover:opacity-80 transition-opacity"
         >

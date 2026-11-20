@@ -86,7 +86,7 @@ export default function AdminDashboard() {
           title="Admin Overview"
           subtitle="Global academy metrics"
           notificationCount={1}
-          notificationHref="/dashboard/admin/security"
+          notificationHref="/dashboard/notifications"
           userName="Super Admin"
           avatarInitials="SA"
           alertText="Online student: 1,280"

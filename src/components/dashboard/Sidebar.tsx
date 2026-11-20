@@ -6,6 +6,11 @@ import Image from 'next/image';
 import { usePathname, useRouter } from 'next/navigation';
 import { clsx } from 'clsx';
 import { createClient } from '@/lib/supabase/client';
+import {
+  canAccessPath,
+  getProfileHref,
+  getProfileHrefFromPathname,
+} from '@/lib/rbac';
 
 export interface NavItem {
   label: string;
@@ -30,21 +35,47 @@ export default function Sidebar({ navItems, userName, userRole, avatarInitials }
   const [signOutError, setSignOutError] = useState<string | null>(null);
   const [profile, setProfile] = useState<{ full_name: string; role: string } | null>(null);
   const [profileError, setProfileError] = useState<string | null>(null);
-  const sidebarNavItems: NavItem[] = navItems.some((item) => item.href === '/dashboard/profile')
-    ? navItems
-    : [
-        ...navItems,
-        {
-          label: 'Profile',
-          href: '/dashboard/profile',
-          icon: (
-            <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="8" r="4" />
-              <path d="M5 21a7 7 0 0 1 14 0" />
-            </svg>
-          ),
-        },
-      ];
+  const notificationsHref = '/dashboard/notifications';
+  const profileHref = profile ? getProfileHref(profile.role) : getProfileHrefFromPathname(pathname);
+
+  // Hide sections the signed-in role is not allowed to open. This keeps the
+  // Money Management sidebar focused on finance, reports and audit while still
+  // exposing the shared Notifications and Profile routes to every role.
+  const roleNavItems = profile
+    ? navItems.filter((item) => canAccessPath(profile.role, item.href))
+    : navItems;
+
+  const navItemsWithSharedRoutes: NavItem[] = roleNavItems.map((item) =>
+    item.href === '/dashboard/profile' ? { ...item, href: profileHref } : item
+  );
+
+  if (!navItemsWithSharedRoutes.some((item) => item.href === notificationsHref)) {
+    navItemsWithSharedRoutes.push({
+      label: 'Notifications',
+      href: notificationsHref,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <path d="M18 8A6 6 0 0 0 6 8c0 7-3 9-3 9h18s-3-2-3-9" />
+          <path d="M13.73 21a2 2 0 0 1-3.46 0" />
+        </svg>
+      ),
+    });
+  }
+
+  if (!navItemsWithSharedRoutes.some((item) => item.href === profileHref)) {
+    navItemsWithSharedRoutes.push({
+      label: 'Profile',
+      href: profileHref,
+      icon: (
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <circle cx="12" cy="8" r="4" />
+          <path d="M5 21a7 7 0 0 1 14 0" />
+        </svg>
+      ),
+    });
+  }
+
+  const sidebarNavItems = navItemsWithSharedRoutes;
 
   useEffect(() => {
     let active = true;
@@ -101,6 +132,12 @@ export default function Sidebar({ navItems, userName, userRole, avatarInitials }
     ? profile.full_name.split(/\s+/).slice(0, 2).map(part => part[0]).join('').toUpperCase()
     : avatarInitials;
 
+  // Match the most specific route so a nested page (for example
+  // /dashboard/admin/finance/profile) does not also highlight its parent.
+  const activeHref = sidebarNavItems
+    .filter((item) => pathname === item.href || pathname.startsWith(`${item.href}/`))
+    .sort((a, b) => b.href.length - a.href.length)[0]?.href;
+
   return (
     <>
       {/* Desktop Sidebar */}
@@ -150,7 +187,7 @@ export default function Sidebar({ navItems, userName, userRole, avatarInitials }
         {/* Nav Items */}
         <nav className="flex-1 py-4 px-3 space-y-1 overflow-y-auto">
           {sidebarNavItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = activeHref === item.href;
             return (
               <Link
                 key={item.href}
@@ -210,7 +247,7 @@ export default function Sidebar({ navItems, userName, userRole, avatarInitials }
         >
           {signOutError && <p role="alert" className="mb-2 px-2 text-[11px] text-red-400">{signOutError}</p>}
           <Link
-            href="/dashboard/profile"
+            href={profileHref}
             className="flex w-full items-center gap-3 px-2 py-2 rounded-xl hover:bg-white/5 transition-colors text-left"
             aria-label="View profile"
           >
@@ -264,7 +301,7 @@ export default function Sidebar({ navItems, userName, userRole, avatarInitials }
       >
         <div className="flex w-max min-w-full items-center justify-start gap-1 py-2 px-2">
           {sidebarNavItems.map((item) => {
-            const isActive = pathname === item.href || pathname.startsWith(`${item.href}/`);
+            const isActive = activeHref === item.href;
             return (
             <Link
               key={item.href}

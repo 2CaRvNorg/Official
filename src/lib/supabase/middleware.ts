@@ -1,13 +1,6 @@
 import { createServerClient, type CookieOptions } from '@supabase/ssr';
 import { NextResponse, type NextRequest } from 'next/server';
-
-const ROLE_HOME: Record<string, string> = {
-  admin: '/dashboard/admin',
-  institution_head: '/dashboard/institution',
-  teacher: '/dashboard/teacher',
-  student: '/dashboard/student',
-  money_management: '/dashboard/admin/finance',
-};
+import { canAccessPath, getRoleHome } from '@/lib/rbac';
 
 export async function updateSession(request: NextRequest) {
   let response = NextResponse.next({
@@ -89,7 +82,7 @@ export async function updateSession(request: NextRequest) {
       return redirect('/login');
     }
 
-    const roleHome = ROLE_HOME[String(profile.role)];
+    const roleHome = getRoleHome(profile.role);
 
     if (!roleHome) {
       return redirect('/login');
@@ -124,18 +117,7 @@ export async function updateSession(request: NextRequest) {
       return redirect(roleHome);
     }
 
-    const isAdminFinance = pathname === '/dashboard/admin/finance';
-    const isProfileRoute = pathname === '/dashboard/profile';
-    const hasRoleAccess =
-      isProfileRoute
-        ? true
-        : profile.role === 'admin'
-        ? pathname === '/dashboard/admin' || pathname.startsWith('/dashboard/admin/')
-        : profile.role === 'money_management'
-        ? isAdminFinance
-        : pathname === roleHome || pathname.startsWith(`${roleHome}/`);
-
-    if (!hasRoleAccess) {
+    if (!canAccessPath(profile.role, pathname)) {
       return redirect(roleHome);
     }
   }
