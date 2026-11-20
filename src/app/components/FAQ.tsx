@@ -143,9 +143,9 @@ export default function FAQ() {
       className="section"
       style={{ background: 'linear-gradient(180deg, #060918 0%, #070a16 100%)' }}
     >
-      <div className="max-w-3xl mx-auto">
+      <div className="w-full px-4 mx-auto max-w-3xl">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-14">
+        <div ref={headerRef} className="text-center mb-10">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6"
             style={{ background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.3)' }}>
             FAQs

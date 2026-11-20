@@ -122,9 +122,9 @@ export default function Programmes() {
         aria-hidden="true"
       />
 
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full px-4 mx-auto max-w-5xl">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6"
             style={{ background: 'rgba(0,229,255,0.1)', color: '#00E5FF', border: '1px solid rgba(0,229,255,0.3)' }}>
             Our Programmes
@@ -139,7 +139,7 @@ export default function Programmes() {
         </div>
 
         {/* Programme Cards */}
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-start">
+        <div className="grid grid-cols-1 gap-6">
           {PROGRAMMES.map((prog, i) => (
             <div
               key={prog.id}

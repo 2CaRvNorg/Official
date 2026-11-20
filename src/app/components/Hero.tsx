@@ -134,8 +134,9 @@ export default function Hero() {
       {/* Content */}
       <div
         ref={contentRef}
-        className="relative z-10 grid w-full max-w-7xl grid-cols-1 items-center gap-14 px-6 py-28 mx-auto lg:grid-cols-[1.05fr_0.95fr] lg:gap-16 lg:py-24"
+        className="relative z-10 w-full px-4 py-10 mx-auto lg:px-6 lg:py-28"
       >
+        <div className="grid w-full max-w-4xl grid-cols-1 items-center gap-10 lg:grid-cols-[1.05fr_0.95fr] lg:gap-16">
         <div className="text-center lg:text-left">
         {/* Badge */}
         <div className="inline-flex items-center gap-2 glass rounded-full px-4 py-2 mb-8 text-sm font-medium"
@@ -258,7 +259,7 @@ export default function Hero() {
         </aside>
 
         {/* Scroll indicator */}
-        <div className="flex justify-center lg:col-span-2">
+        <div className="flex justify-center mt-10 sm:mt-12 lg:mt-0 lg:col-span-2">
           <div className="flex flex-col items-center gap-2 text-white/30 text-xs font-medium tracking-widest uppercase">
             <span>Scroll</span>
             <div className="w-px h-10 bg-gradient-to-b from-white/30 to-transparent" />

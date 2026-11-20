@@ -113,9 +113,9 @@ export default function Testimonials() {
         aria-hidden="true"
       />
 
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full px-4 mx-auto max-w-3xl">
         {/* Header */}
-        <div ref={headerRef} className="text-center mb-16">
+        <div ref={headerRef} className="text-center mb-12">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6"
             style={{ background: 'rgba(245,166,35,0.1)', color: '#F5A623', border: '1px solid rgba(245,166,35,0.3)' }}>
             Student Stories

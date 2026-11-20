@@ -80,7 +80,7 @@ export default function Footer() {
       >
         <div
           ref={ctaSectionRef}
-          className="max-w-4xl mx-auto text-center"
+          className="w-full px-4 mx-auto max-w-3xl text-center"
         >
           {/* Background orbs */}
           <div
@@ -138,8 +138,8 @@ export default function Footer() {
       <div
         style={{ background: '#04060f', borderTop: '1px solid rgba(255,255,255,0.06)', padding: '48px 24px 32px' }}
       >
-        <div className="max-w-7xl mx-auto">
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-10 mb-10">
+        <div className="w-full px-4 mx-auto max-w-5xl">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8 mb-8">
             {/* Brand */}
             <div>
               <div className="mb-4 flex items-center gap-3">

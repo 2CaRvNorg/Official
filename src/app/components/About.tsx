@@ -78,16 +78,16 @@ export default function About() {
         aria-hidden="true"
       />
 
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full px-4 mx-auto max-w-5xl">
         {/* Section Label */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-4"
             style={{ background: 'rgba(245,166,35,0.1)', color: '#F5A623', border: '1px solid rgba(245,166,35,0.3)' }}>
             About Us
           </span>
         </div>
 
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
           {/* Left: Text Content */}
           <div ref={textRef}>
             <h2 className="section-title mb-6">

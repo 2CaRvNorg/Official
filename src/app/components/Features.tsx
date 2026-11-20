@@ -91,9 +91,9 @@ export default function Features() {
         aria-hidden="true"
       />
 
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full px-4 mx-auto max-w-5xl">
         {/* Header */}
-        <div className="text-center mb-16">
+        <div className="text-center mb-12">
           <span className="inline-block text-xs font-semibold tracking-widest uppercase px-4 py-1.5 rounded-full mb-6"
             style={{ background: 'rgba(123,97,255,0.12)', color: '#7B61FF', border: '1px solid rgba(123,97,255,0.3)' }}>
             Why 2Carvn
@@ -110,7 +110,7 @@ export default function Features() {
         {/* Feature Grid */}
         <div
           ref={cardsContainerRef}
-          className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"
+          className="grid grid-cols-1 gap-4"
         >
           {FEATURES.map((feature) => (
             <div

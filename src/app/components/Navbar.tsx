@@ -67,7 +67,7 @@ export default function Navbar() {
         scrolled ? 'py-3' : 'py-4'
       }`}
     >
-      <div className="max-w-7xl mx-auto px-4 sm:px-6">
+      <div className="w-full px-4 mx-auto sm:px-6">
         <nav
           className={`glass rounded-2xl px-5 py-3 flex items-center justify-between transition-all duration-300 ${
             scrolled ? 'shadow-lg' : ''
